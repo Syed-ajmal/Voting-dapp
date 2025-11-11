@@ -6,10 +6,10 @@ import * as contractApi from "../api/contract";
 
 /**
  * Vote page
- * - If location.state.ballotId provided, auto-load that ballot
- * - Otherwise user may enter ballot id manually
- * - Read-only calls use getReadOnlyContract() or default export
- * - Sending uses getSignerContract()
+ * - Reads ballot info via read-only contract helper.
+ * - Sends vote via signer contract helper.
+ * This version prefers the actual exported names getReadOnlyContract/getSignerContract
+ * but also tolerates a default export for read-only if that's present.
  */
 
 export default function Vote() {
@@ -23,20 +23,23 @@ export default function Vote() {
   const [candidates, setCandidates] = useState([]);
   const [selectedCandidate, setSelectedCandidate] = useState("");
   const [merkleRoot, setMerkleRoot] = useState("");
-  const [merkleProofText, setMerkleProofText] = useState(""); // comma separated proof elements
+  const [merkleProofText, setMerkleProofText] = useState("");
   const [status, setStatus] = useState(null);
   const [busy, setBusy] = useState(false);
   const [userHasVoted, setUserHasVoted] = useState(false);
   const [isPaused, setIsPaused] = useState(null);
 
-  // resolve read-only initializer (support getReadOnlyContract or default)
+  // Prefer the actual exported functions in src/api/contract
   function resolveReadOnlyInit() {
     if (typeof contractApi.getReadOnlyContract === "function") return contractApi.getReadOnlyContract;
     if (typeof contractApi.default === "function") return contractApi.default;
     throw new Error("No read-only contract initializer found in src/api/contract.");
   }
+  function resolveSignerInit() {
+    if (typeof contractApi.getSignerContract === "function") return contractApi.getSignerContract;
+    throw new Error("No signer contract initializer found in src/api/contract.");
+  }
 
-  // load ballot by id
   async function loadBallotById(id) {
     setStatus(null);
     setLoading(true);
@@ -50,6 +53,7 @@ export default function Vote() {
         setStatus("Provide a numeric ballot id.");
         return;
       }
+
       const readFn = resolveReadOnlyInit();
       const ro = await readFn();
       const contract = ro?.contract || ro;
@@ -58,11 +62,10 @@ export default function Vote() {
       }
 
       const res = await contract.getBallot(Number(id));
-      // tuple: title, startTimestamp, endTimestamp, merkleRoot, candidateCount, finalized
       const title = res[0];
       const start = Number(res[1] || 0);
       const end = Number(res[2] || 0);
-      const root = res[3];
+      const root = res[3] || "0x" + "0".repeat(64);
       const candidateCount = Number(res[4] || 0);
       const finalized = Boolean(res[5]);
 
@@ -71,26 +74,24 @@ export default function Vote() {
         try {
           const nm = await contract.getCandidateName(Number(id), i);
           names.push(nm);
-        } catch (e) {
+        } catch {
           names.push("");
         }
       }
 
-      // paused state (if contract exposes paused())
       let paused = null;
       try {
         const p = await contract.paused();
         paused = Boolean(p);
       } catch {
-        paused = null; // not available
+        paused = null;
       }
 
       setBallot({ id: Number(id), title, start, end, finalized });
       setCandidates(names);
-      setMerkleRoot(root || "0x" + "0".repeat(64));
+      setMerkleRoot(root);
       setIsPaused(paused);
 
-      // if connected, check if user already voted
       if (connectedAddress && typeof contract.hasUserVoted === "function") {
         try {
           const hv = await contract.hasUserVoted(Number(id), connectedAddress);
@@ -109,7 +110,6 @@ export default function Vote() {
     }
   }
 
-  // whenever page state has ballotId, try loading
   useEffect(() => {
     if (state?.ballotId != null) {
       setBallotIdInput(state.ballotId);
@@ -118,7 +118,6 @@ export default function Vote() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state?.ballotId]);
 
-  // whenever connected address changes, re-check hasUserVoted for current ballot
   useEffect(() => {
     if (!ballot) return;
     (async () => {
@@ -130,7 +129,7 @@ export default function Vote() {
           const hv = await contract.hasUserVoted(ballot.id, connectedAddress);
           setUserHasVoted(Boolean(hv));
         }
-      } catch (e) {
+      } catch {
         // ignore
       }
     })();
@@ -145,13 +144,14 @@ export default function Vote() {
     }
   }
 
-  // helper to parse merkle proof input (comma separated 0x... pieces)
   function parseProof(text) {
     if (!text) return [];
-    return text.split(",").map(s => s.trim()).filter(Boolean);
+    const parts = text.split(",").map(s => s.trim()).filter(Boolean);
+    const ok = parts.every(p => /^0x[0-9a-fA-F]+$/.test(p));
+    if (!ok) throw new Error("Merkle proof entries must be hex strings (0x...) separated by commas.");
+    return parts;
   }
 
-  // main vote action
   async function submitVote(e) {
     e?.preventDefault?.();
     setStatus(null);
@@ -186,40 +186,36 @@ export default function Vote() {
       return;
     }
 
-    // ensure wallet connected
     try {
       if (!connectedAddress) {
         await connect();
-        // short delay for wallet context update
-        await new Promise(r => setTimeout(r, 200));
+        await new Promise(r => setTimeout(r, 300));
       }
     } catch (err) {
       setStatus("Wallet connect failed: " + (err?.message || String(err)));
       return;
     }
 
-    // send transaction via signer contract
     setBusy(true);
     setStatus("Submitting transaction — confirm in MetaMask...");
     try {
-      if (typeof contractApi.getSignerContract !== "function") {
-        throw new Error("getSignerContract not exported from src/api/contract");
+      const signerInit = resolveSignerInit();
+      const { contract } = await signerInit();
+      if (!contract || typeof contract.vote !== "function") {
+        throw new Error("Signer contract not available for voting.");
       }
-      const { contract } = await contractApi.getSignerContract();
-      // merkle proof as array of bytes32 (strings)
+
       const proof = parseProof(merkleProofText);
-      // call vote(ballotId, candidateName, proof)
+
       const tx = await contract.vote(ballot.id, selectedCandidate, proof);
       setStatus("Transaction submitted: " + tx.hash + " — waiting for confirmation...");
       await tx.wait();
       setStatus("Vote recorded ✅");
-      // update hasVoted and candidate votes read-only refresh
       setUserHasVoted(true);
-      // refresh ballot to update votes
       await loadBallotById(ballot.id);
     } catch (err) {
       console.error("submitVote failed", err);
-      if (err?.code === 4001) {
+      if (err?.code === 4001 || err?.code === "ACTION_REJECTED" || (err?.data && err.data?.code === 4001)) {
         setStatus("Transaction cancelled by user.");
       } else {
         const msg = err?.reason || err?.message || String(err);
