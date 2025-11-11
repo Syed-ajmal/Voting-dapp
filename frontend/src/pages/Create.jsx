@@ -31,27 +31,34 @@ export default function Create() {
   const [statusMessage, setStatusMessage] = useState(null);
 
   // Load owner using read-only RPC once on mount
+    // Load owner using read-only RPC once on mount
   useEffect(() => {
     let mounted = true;
     async function loadOwner() {
       setLoadingOwner(true);
       setStatusMessage(null);
       try {
-        const { contract, provider } = getReadOnlyContract();
+        // <-- AWAIT the async initializer
+        const res = await getReadOnlyContract();
+        const contract = res.contract;
+        const provider = res.provider;
+        console.info("[Create] using RPC:", res.url);
+
         const o = await contract.owner();
         if (!mounted) return;
         setOwnerAddress(o);
+
         try {
           const net = await provider.getNetwork();
           if (mounted) setRpcChainId(net.chainId);
         } catch (e) {
-          console.warn("Could not read RPC network:", e);
+          console.warn("[Create] could not read RPC network:", e);
         }
       } catch (err) {
         console.error("Failed to read owner via RPC:", err);
         if (mounted) {
           setOwnerAddress(null);
-          setStatusMessage("Failed to read contract owner via RPC. Check RPC URL and network.");
+          setStatusMessage("Failed to read contract owner via RPC. Check RPC URL and network (see console).");
         }
       } finally {
         if (mounted) setLoadingOwner(false);

@@ -12,10 +12,8 @@ import { getReadOnlyContract, getSignerContract } from "../api/contract";
  * - Update merkle root for a ballot
  * - Extend ballot end time
  *
- * Notes:
- * - Uses read-only RPC to list ballots and owner.
- * - Uses signer-backed contract calls for admin actions (prompts MetaMask).
- * - Minimal, unstyled UI by design.
+ * Minimal, unstyled UI. This version uses `await getReadOnlyContract()` everywhere
+ * to ensure the initializer is an async call that returns { contract, provider, url }.
  */
 
 export default function AdminControl() {
@@ -40,7 +38,11 @@ export default function AdminControl() {
       setLoading(true);
       setStatus(null);
       try {
-        const { contract, provider } = getReadOnlyContract();
+        // await the read-only initializer (may throw helpful errors)
+        const res = await getReadOnlyContract();
+        const { contract, provider, url } = res;
+        console.debug("[AdminControl] using RPC:", url ?? "unknown");
+
         // owner
         try {
           const owner = await contract.owner();
@@ -49,12 +51,11 @@ export default function AdminControl() {
           if (mounted) setOwnerAddress(null);
         }
 
-        // pause state: Pausable.sol does not expose a public paused() in OZ? OpenZeppelin Pausable has paused() internal? In OZ Pausable exposes `paused()` as a public view — call it.
+        // paused state (if contract exposes paused())
         try {
           const paused = await contract.paused();
           if (mounted) setContractPaused(Boolean(paused));
         } catch (e) {
-          // if paused() not available, skip
           console.warn("Could not read paused state:", e);
           if (mounted) setContractPaused(null);
         }
@@ -107,12 +108,10 @@ export default function AdminControl() {
           const e = {};
           list.forEach(b => {
             m[b.id] = b.merkleRoot || "";
-            // convert endTs to datetime-local string
             try {
               const d = new Date(Number(b.endTs) * 1000);
-              // format to YYYY-MM-DDTHH:mm
               const iso = d.toISOString();
-              e[b.id] = iso.slice(0, 16);
+              e[b.id] = iso.slice(0, 16); // "YYYY-MM-DDTHH:mm"
             } catch {
               e[b.id] = "";
             }
@@ -157,6 +156,7 @@ export default function AdminControl() {
   async function ensureConnected() {
     if (!connectedAddress) {
       await connect();
+      // brief wait to let WalletContext propagate
       await new Promise(r => setTimeout(r, 200));
     }
   }
@@ -189,8 +189,8 @@ export default function AdminControl() {
       setStatus((contractPaused ? "Unpaused" : "Paused") + " successfully.");
       // refresh paused state
       try {
-        const { contract: rContract } = getReadOnlyContract();
-        const paused = await rContract.paused();
+        const res2 = await getReadOnlyContract();
+        const paused = await res2.contract.paused();
         setContractPaused(Boolean(paused));
       } catch (_) { /* ignore */ }
     } catch (err) {
@@ -314,7 +314,8 @@ export default function AdminControl() {
   async function refreshBallot(ballotId) {
     setStatus(null);
     try {
-      const { contract } = getReadOnlyContract();
+      const res = await getReadOnlyContract();
+      const contract = res.contract;
       const [title, startTsRaw, endTsRaw, merkleRoot, candidateCount_, finalized] = await contract.getBallot(ballotId);
       const candidateCount = Number(candidateCount_);
       const candidateNames = [];
@@ -431,12 +432,4 @@ export default function AdminControl() {
       )}
     </div>
   );
-
-  function tsToLocal(ts) {
-    try {
-      return new Date(Number(ts) * 1000).toLocaleString();
-    } catch {
-      return String(ts);
-    }
-  }
 }

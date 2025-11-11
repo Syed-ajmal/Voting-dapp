@@ -28,18 +28,33 @@ export default function Results() {
       setLoading(true);
       setStatus(null);
       try {
-        const { contract } = getReadOnlyContract();
+        // <-- await the async initializer
+        const res = await getReadOnlyContract();
+        const contract = res.contract;
+        console.info("[Results] using RPC:", res.url);
+
         // owner (for owner-only actions)
         try {
           const owner = await contract.owner();
           if (mounted) setOwnersAddress(owner);
         } catch (e) {
           if (mounted) setOwnersAddress(null);
+          console.warn("[Results] reading owner failed:", e);
         }
 
         const nextIdRaw = await contract.nextBallotId();
         const nextId = Number(nextIdRaw || 0);
         const list = [];
+
+        // If there are no ballots on-chain, show friendly message
+        if (nextId === 0) {
+          if (mounted) {
+            setBallots([]);
+            setSelectedId(null);
+            setStatus("No ballots found on-chain (nextBallotId == 0).");
+          }
+          return;
+        }
 
         for (let i = 0; i < nextId; i++) {
           try {
@@ -50,13 +65,21 @@ export default function Results() {
             const candidateNames = [];
             const votes = [];
 
+            // sequentially fetch candidate names and vote counts to avoid too many parallel RPC calls
             for (let j = 0; j < candidateCount; j++) {
-              const name = await contract.getCandidateName(i, j);
-              candidateNames.push(name);
+              try {
+                const name = await contract.getCandidateName(i, j);
+                candidateNames.push(name);
+              } catch (nameErr) {
+                console.warn(`[Results] getCandidateName failed for ballot ${i} candidate ${j}:`, nameErr);
+                candidateNames.push("");
+              }
+
               try {
                 const v = await contract.getVotes(i, j);
                 votes.push(Number(v));
               } catch (vErr) {
+                console.warn(`[Results] getVotes failed for ballot ${i} candidate ${j}:`, vErr);
                 votes.push(0);
               }
             }
@@ -110,14 +133,22 @@ export default function Results() {
   async function refreshBallot(id) {
     setStatus(null);
     try {
-      const { contract } = getReadOnlyContract();
+      const res = await getReadOnlyContract();
+      const contract = res.contract;
+      console.info("[Results] refreshBallot using RPC:", res.url);
+
       const [title, startTsRaw, endTsRaw, merkleRoot, candidateCount_, finalized] = await contract.getBallot(id);
       const candidateCount = Number(candidateCount_);
       const candidateNames = [];
       const votes = [];
       for (let j = 0; j < candidateCount; j++) {
-        const name = await contract.getCandidateName(id, j);
-        candidateNames.push(name);
+        try {
+          const name = await contract.getCandidateName(id, j);
+          candidateNames.push(name);
+        } catch (nameErr) {
+          console.warn(`[Results] refreshBallot getCandidateName failed for ${id},${j}`, nameErr);
+          candidateNames.push("");
+        }
         try {
           const v = await contract.getVotes(id, j);
           votes.push(Number(v));
@@ -147,7 +178,10 @@ export default function Results() {
   async function loadWinners(id) {
     setStatus(null);
     try {
-      const { contract } = getReadOnlyContract();
+      const res = await getReadOnlyContract();
+      const contract = res.contract;
+      console.info("[Results] loadWinners using RPC:", res.url);
+
       const [names, winningVotes] = await contract.getWinners(id);
       return { names: names || [], winningVotes: Number(winningVotes || 0) };
     } catch (err) {
@@ -246,11 +280,7 @@ export default function Results() {
               <button onClick={async () => {
                 setStatus("Refreshing...");
                 try {
-                  // simple full reload of data
-                  const { contract } = getReadOnlyContract();
-                  const nextIdRaw = await contract.nextBallotId();
-                  const nextId = Number(nextIdRaw || 0);
-                  // naive approach: reload page to re-run effects
+                  // reload page to re-run effects (keeps it simple)
                   window.location.reload();
                 } catch (err) {
                   console.error("refresh all failed", err);
