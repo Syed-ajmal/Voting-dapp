@@ -12,8 +12,9 @@ import { getReadOnlyContract, getSignerContract } from "../api/contract";
  * - Update merkle root for a ballot
  * - Extend ballot end time
  *
- * Minimal, unstyled UI. This version uses `await getReadOnlyContract()` everywhere
- * to ensure the initializer is an async call that returns { contract, provider, url }.
+ * This version avoids loading *all* ballots on mount to prevent RPC rate limits.
+ * Instead it loads contract metadata (owner + paused) and provides a search box
+ * so the admin can load a single ballot by id on demand.
  */
 
 export default function AdminControl() {
@@ -21,7 +22,7 @@ export default function AdminControl() {
 
   const [ownerAddress, setOwnerAddress] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [ballots, setBallots] = useState([]);
+  const [ballots, setBallots] = useState([]); // can contain multiple individually-loaded ballots
   const [status, setStatus] = useState(null);
   const [busy, setBusy] = useState(false);
   const [contractPaused, setContractPaused] = useState(null);
@@ -30,17 +31,19 @@ export default function AdminControl() {
   const [merkleInputs, setMerkleInputs] = useState({}); // ballotId -> string
   const [endInputs, setEndInputs] = useState({}); // ballotId -> datetime-local string
 
-  // load owner, pause state, ballots
+  // search input for loading single ballot by id
+  const [loadBallotId, setLoadBallotId] = useState("");
+
+  // load owner & paused state only (avoid fetching all ballots)
   useEffect(() => {
     let mounted = true;
 
-    async function loadAll() {
+    async function loadOwnerAndPause() {
       setLoading(true);
       setStatus(null);
       try {
-        // await the read-only initializer (may throw helpful errors)
         const res = await getReadOnlyContract();
-        const { contract, provider, url } = res;
+        const { contract, url } = res;
         console.debug("[AdminControl] using RPC:", url ?? "unknown");
 
         // owner
@@ -60,74 +63,19 @@ export default function AdminControl() {
           if (mounted) setContractPaused(null);
         }
 
-        // ballots
-        const nextIdRaw = await contract.nextBallotId();
-        const nextId = Number(nextIdRaw || 0);
-        const list = [];
-
-        for (let i = 0; i < nextId; i++) {
-          try {
-            const [title, startTsRaw, endTsRaw, merkleRoot, candidateCount_, finalized] = await contract.getBallot(i);
-            const candidateCount = Number(candidateCount_);
-            const candidateNames = [];
-            const votes = [];
-            for (let j = 0; j < candidateCount; j++) {
-              try {
-                const name = await contract.getCandidateName(i, j);
-                candidateNames.push(name);
-              } catch {
-                candidateNames.push("");
-              }
-              try {
-                const v = await contract.getVotes(i, j);
-                votes.push(Number(v));
-              } catch {
-                votes.push(0);
-              }
-            }
-            list.push({
-              id: i,
-              title,
-              startTs: Number(startTsRaw),
-              endTs: Number(endTsRaw),
-              merkleRoot,
-              candidateCount,
-              finalized,
-              candidateNames,
-              votes,
-            });
-          } catch (err) {
-            console.warn("Skipping ballot read", i, err);
-          }
-        }
-
+        // do NOT fetch all ballots here (rate-limits). keep ballots empty.
         if (mounted) {
-          setBallots(list);
-          // seed input maps
-          const m = {};
-          const e = {};
-          list.forEach(b => {
-            m[b.id] = b.merkleRoot || "";
-            try {
-              const d = new Date(Number(b.endTs) * 1000);
-              const iso = d.toISOString();
-              e[b.id] = iso.slice(0, 16); // "YYYY-MM-DDTHH:mm"
-            } catch {
-              e[b.id] = "";
-            }
-          });
-          setMerkleInputs(m);
-          setEndInputs(e);
+          setBallots([]);
         }
       } catch (err) {
-        console.error("loadAll admin failed", err);
-        if (mounted) setStatus("Failed to load contract/ballots (check RPC). See console.");
+        console.error("loadOwnerAndPause failed", err);
+        if (mounted) setStatus("Failed to load contract metadata. Check RPC/config in console.");
       } finally {
         if (mounted) setLoading(false);
       }
     }
 
-    loadAll();
+    loadOwnerAndPause();
     return () => { mounted = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -158,6 +106,74 @@ export default function AdminControl() {
       await connect();
       // brief wait to let WalletContext propagate
       await new Promise(r => setTimeout(r, 200));
+    }
+  }
+
+  // refresh single ballot data (inserts or updates the ballot in `ballots`)
+  async function refreshBallot(ballotId) {
+    setStatus(null);
+    try {
+      const res = await getReadOnlyContract();
+      const contract = res.contract;
+
+      const [title, startTsRaw, endTsRaw, merkleRoot, candidateCount_, finalized] = await contract.getBallot(ballotId);
+      const candidateCount = Number(candidateCount_);
+      const candidateNames = [];
+      const votes = [];
+      for (let j = 0; j < candidateCount; j++) {
+        try {
+          const name = await contract.getCandidateName(ballotId, j);
+          candidateNames.push(name);
+        } catch {
+          candidateNames.push("");
+        }
+        try {
+          const v = await contract.getVotes(ballotId, j);
+          votes.push(Number(v));
+        } catch {
+          votes.push(0);
+        }
+      }
+
+      // insert or update
+      setBallots(prev => {
+        const updated = prev.map(b => b.id === ballotId ? ({
+          id: ballotId,
+          title,
+          startTs: Number(startTsRaw),
+          endTs: Number(endTsRaw),
+          merkleRoot,
+          candidateCount,
+          finalized,
+          candidateNames,
+          votes,
+        }) : b);
+
+        if (!updated.some(b => b.id === ballotId)) {
+          updated.push({
+            id: ballotId,
+            title,
+            startTs: Number(startTsRaw),
+            endTs: Number(endTsRaw),
+            merkleRoot,
+            candidateCount,
+            finalized,
+            candidateNames,
+            votes,
+          });
+        }
+        return updated;
+      });
+
+      // seed inputs for the loaded ballot
+      setMerkleInputs(prev => ({ ...prev, [ballotId]: merkleRoot || "" }));
+      try {
+        const dIso = new Date(Number(endTsRaw) * 1000).toISOString().slice(0,16);
+        setEndInputs(prev => ({ ...prev, [ballotId]: dIso }));
+      } catch {}
+    } catch (err) {
+      console.error("refreshBallot failed", err);
+      throw err;
     }
   }
 
@@ -311,62 +327,17 @@ export default function AdminControl() {
     }
   }
 
-  async function refreshBallot(ballotId) {
-    setStatus(null);
-    try {
-      const res = await getReadOnlyContract();
-      const contract = res.contract;
-      const [title, startTsRaw, endTsRaw, merkleRoot, candidateCount_, finalized] = await contract.getBallot(ballotId);
-      const candidateCount = Number(candidateCount_);
-      const candidateNames = [];
-      const votes = [];
-      for (let j = 0; j < candidateCount; j++) {
-        try {
-          const name = await contract.getCandidateName(ballotId, j);
-          candidateNames.push(name);
-        } catch {
-          candidateNames.push("");
-        }
-        try {
-          const v = await contract.getVotes(ballotId, j);
-          votes.push(Number(v));
-        } catch {
-          votes.push(0);
-        }
-      }
-      setBallots(prev => prev.map(b => b.id === ballotId ? ({
-        id: ballotId,
-        title,
-        startTs: Number(startTsRaw),
-        endTs: Number(endTsRaw),
-        merkleRoot,
-        candidateCount,
-        finalized,
-        candidateNames,
-        votes,
-      }) : b));
-      // update merkle inputs and endInputs if present
-      setMerkleInputs(prev => ({ ...prev, [ballotId]: merkleRoot || "" }));
-      try {
-        const dIso = new Date(Number(endTsRaw) * 1000).toISOString().slice(0,16);
-        setEndInputs(prev => ({ ...prev, [ballotId]: dIso }));
-      } catch {}
-    } catch (err) {
-      console.error("refreshBallot failed", err);
-      setStatus("Failed to refresh ballot; see console.");
-    }
-  }
-
   return (
     <div style={{ padding: 12 }}>
       <h2>Admin Control</h2>
 
       <div style={{ marginBottom: 10 }}>
-        <div>Contract owner (RPC): {ownerAddress || "loading..."}</div>
-        <div>Connected wallet: {connectedAddress || "not connected"}</div>
-        <div>Contract paused: {contractPaused === null ? "unknown" : contractPaused ? "yes" : "no"}</div>
+        <div><strong>Contract owner (RPC):</strong> {ownerAddress || (loading ? "loading..." : "not available")}</div>
+        <div><strong>Connected wallet:</strong> {connectedAddress || "not connected"}</div>
+        <div><strong>Contract paused:</strong> {contractPaused === null ? "unknown" : contractPaused ? "yes" : "no"}</div>
       </div>
 
+      {/* Pause toggle */}
       <div style={{ marginBottom: 12 }}>
         <button onClick={togglePause} disabled={busy || !isOwnerConnected()}>
           {busy ? "Working..." : (contractPaused ? "Unpause Contract" : "Pause Contract")}
@@ -376,10 +347,52 @@ export default function AdminControl() {
 
       {status && <div style={{ marginBottom: 12, color: "darkred" }}>{status}</div>}
 
+      {/* Ballot search/load (to avoid loading all ballots at once) */}
+      <div style={{ marginBottom: 12 }}>
+        <label>
+          Load ballot ID&nbsp;
+          <input
+            type="number"
+            value={loadBallotId}
+            onChange={(e) => setLoadBallotId(e.target.value)}
+            style={{ width: 120 }}
+            placeholder="e.g. 0"
+          />
+        </label>
+        <button
+          onClick={async () => {
+            setStatus("Loading ballot...");
+            try {
+              const id = Number(loadBallotId);
+              if (isNaN(id)) throw new Error("Provide a numeric ballot id");
+              await refreshBallot(id);
+              setStatus(null);
+            } catch (err) {
+              console.error("Load ballot failed", err);
+              setStatus("Failed to load ballot: " + (err?.message || String(err)));
+            }
+          }}
+          style={{ marginLeft: 8 }}
+          disabled={busy}
+        >
+          Load Ballot
+        </button>
+        <button
+          onClick={() => {
+            setBallots([]);
+            setLoadBallotId("");
+            setStatus(null);
+          }}
+          style={{ marginLeft: 8 }}
+        >
+          Clear
+        </button>
+      </div>
+
       {loading ? (
-        <div>Loading ballots...</div>
+        <div>Loading contract metadata...</div>
       ) : ballots.length === 0 ? (
-        <div>No ballots found.</div>
+        <div>No ballot loaded. Use the search box above to load one ballot by id.</div>
       ) : (
         <div>
           {ballots.map(b => (
@@ -393,7 +406,7 @@ export default function AdminControl() {
                 <div>
                   <strong>Merkle root:</strong><br />
                   <input
-                    value={merkleInputs[b.id] ?? ""}
+                    value={merkleInputs[b.id] ?? (b.merkleRoot || "")}
                     onChange={e => setMerkleInput(b.id, e.target.value)}
                     placeholder="0x... or leave blank to clear"
                     style={{ width: "70%" }}
@@ -425,6 +438,17 @@ export default function AdminControl() {
                     Refresh
                   </button>
                 </div>
+              </div>
+
+              <div style={{ marginTop: 10 }}>
+                <h4>Candidates & votes</h4>
+                <ul>
+                  {b.candidateNames.map((n, idx) => (
+                    <li key={idx}>
+                      {n} — {b.votes && b.votes[idx] != null ? b.votes[idx] : "—"}
+                    </li>
+                  ))}
+                </ul>
               </div>
             </div>
           ))}

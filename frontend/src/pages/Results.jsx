@@ -4,123 +4,58 @@ import { useWallet } from "../context/WalletContext";
 import { getReadOnlyContract, getSignerContract } from "../api/contract";
 
 /**
- * Results.jsx
- * - Lists ballots
- * - Shows candidate vote counts for selected ballot
- * - If finalized, shows winners (supports ties)
- * - If not finalized and connected account is owner, shows a Finalize button (owner-only)
+ * Results.jsx (search-first)
+ * - Does NOT enumerate all ballots on mount.
+ * - Loads owner and paused state only (cheap).
+ * - Provides search input to load a single ballot by id.
+ * - Supports finalize (owner-only) and show winners.
  */
 
 export default function Results() {
   const { address: connectedAddress, connect } = useWallet();
 
-  const [loading, setLoading] = useState(true);
-  const [ballots, setBallots] = useState([]);
-  const [selectedId, setSelectedId] = useState(null);
+  const [loadingOwner, setLoadingOwner] = useState(true);
+  const [ownersAddress, setOwnersAddress] = useState(null);
+  const [contractPaused, setContractPaused] = useState(null);
   const [status, setStatus] = useState(null);
   const [busy, setBusy] = useState(false);
-  const [ownersAddress, setOwnersAddress] = useState(null);
 
-  // load ballots and owner on mount
+  // search / loaded ballot state
+  const [searchId, setSearchId] = useState("");
+  const [selected, setSelected] = useState(null); // { id, title, startTs, endTs, merkleRoot, candidateNames[], votes[], finalized, paused }
+  const [loadingBallot, setLoadingBallot] = useState(false);
+
+  // load owner + paused state once on mount (cheap)
   useEffect(() => {
     let mounted = true;
-    async function loadAll() {
-      setLoading(true);
+    async function init() {
+      setLoadingOwner(true);
       setStatus(null);
       try {
-        // <-- await the async initializer
-        const res = await getReadOnlyContract();
-        const contract = res.contract;
-        console.info("[Results] using RPC:", res.url);
-
-        // owner (for owner-only actions)
+        const { contract } = await getReadOnlyContract();
         try {
           const owner = await contract.owner();
           if (mounted) setOwnersAddress(owner);
         } catch (e) {
           if (mounted) setOwnersAddress(null);
-          console.warn("[Results] reading owner failed:", e);
         }
-
-        const nextIdRaw = await contract.nextBallotId();
-        const nextId = Number(nextIdRaw || 0);
-        const list = [];
-
-        // If there are no ballots on-chain, show friendly message
-        if (nextId === 0) {
-          if (mounted) {
-            setBallots([]);
-            setSelectedId(null);
-            setStatus("No ballots found on-chain (nextBallotId == 0).");
-          }
-          return;
-        }
-
-        for (let i = 0; i < nextId; i++) {
-          try {
-            const [title, startTsRaw, endTsRaw, merkleRoot, candidateCount_, finalized] = await contract.getBallot(i);
-            const startTs = Number(startTsRaw);
-            const endTs = Number(endTsRaw);
-            const candidateCount = Number(candidateCount_);
-            const candidateNames = [];
-            const votes = [];
-
-            // sequentially fetch candidate names and vote counts to avoid too many parallel RPC calls
-            for (let j = 0; j < candidateCount; j++) {
-              try {
-                const name = await contract.getCandidateName(i, j);
-                candidateNames.push(name);
-              } catch (nameErr) {
-                console.warn(`[Results] getCandidateName failed for ballot ${i} candidate ${j}:`, nameErr);
-                candidateNames.push("");
-              }
-
-              try {
-                const v = await contract.getVotes(i, j);
-                votes.push(Number(v));
-              } catch (vErr) {
-                console.warn(`[Results] getVotes failed for ballot ${i} candidate ${j}:`, vErr);
-                votes.push(0);
-              }
-            }
-
-            list.push({
-              id: i,
-              title,
-              startTs,
-              endTs,
-              merkleRoot,
-              candidateCount,
-              finalized,
-              candidateNames,
-              votes,
-            });
-          } catch (innerErr) {
-            console.warn("Skipping reading ballot", i, innerErr);
-          }
-        }
-
-        if (mounted) {
-          setBallots(list);
-          if (list.length > 0 && selectedId === null) setSelectedId(list[0].id);
+        try {
+          const paused = await contract.paused();
+          if (mounted) setContractPaused(Boolean(paused));
+        } catch (e) {
+          if (mounted) setContractPaused(null);
         }
       } catch (err) {
-        console.error("loadAll error", err);
-        if (mounted) setStatus("Failed to load ballots. Check RPC/config in console.");
+        console.error("init results failed", err);
+        if (mounted) setStatus("Failed to initialize contract info. Check RPC / config.");
       } finally {
-        if (mounted) setLoading(false);
+        if (mounted) setLoadingOwner(false);
       }
     }
-
-    loadAll();
-    return () => { mounted = false; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    init();
+    return () => (mounted = false);
   }, []);
 
-  // helper to get selected ballot
-  const selected = ballots.find(b => b.id === selectedId) || null;
-
-  // friendly error messages
   function friendlyErrorMessage(err) {
     if (!err) return "Unknown error";
     if (err.code === 4001) return "Action cancelled by user (MetaMask).";
@@ -129,48 +64,77 @@ export default function Results() {
     return msg;
   }
 
-  // refresh single ballot data (by id)
-  async function refreshBallot(id) {
+  // load a single ballot by id
+  async function loadBallotById(idRaw) {
     setStatus(null);
-    try {
-      const res = await getReadOnlyContract();
-      const contract = res.contract;
-      console.info("[Results] refreshBallot using RPC:", res.url);
+    setSelected(null);
+    setLoadingBallot(true);
 
-      const [title, startTsRaw, endTsRaw, merkleRoot, candidateCount_, finalized] = await contract.getBallot(id);
-      const candidateCount = Number(candidateCount_);
+    try {
+      if (idRaw === "" || idRaw == null || isNaN(Number(idRaw))) {
+        setStatus("Enter a numeric ballot id.");
+        return;
+      }
+      const id = Number(idRaw);
+
+      const { contract } = await getReadOnlyContract();
+      const res = await contract.getBallot(id);
+      if (!res) {
+        setStatus("Ballot not found (empty result).");
+        return;
+      }
+      const title = res[0] || "";
+      const startTs = Number(res[1] || 0);
+      const endTs = Number(res[2] || 0);
+      const merkleRoot = res[3] || "0x" + "0".repeat(64);
+      const candidateCount = Number(res[4] || 0);
+      const finalized = Boolean(res[5]);
+
       const candidateNames = [];
       const votes = [];
+      // sequential read to avoid huge parallel RPC load
       for (let j = 0; j < candidateCount; j++) {
         try {
-          const name = await contract.getCandidateName(id, j);
-          candidateNames.push(name);
-        } catch (nameErr) {
-          console.warn(`[Results] refreshBallot getCandidateName failed for ${id},${j}`, nameErr);
+          const nm = await contract.getCandidateName(id, j);
+          candidateNames.push(nm);
+        } catch (e) {
           candidateNames.push("");
         }
         try {
           const v = await contract.getVotes(id, j);
           votes.push(Number(v));
-        } catch (vErr) {
+        } catch (e) {
           votes.push(0);
         }
       }
 
-      setBallots(prev => prev.map(b => b.id === id ? ({
+      // refresh paused state if available
+      let paused = contractPaused;
+      try {
+        const p = await contract.paused();
+        paused = Boolean(p);
+        setContractPaused(paused);
+      } catch {
+        // ignore if not available
+      }
+
+      setSelected({
         id,
         title,
-        startTs: Number(startTsRaw),
-        endTs: Number(endTsRaw),
+        startTs,
+        endTs,
         merkleRoot,
         candidateCount,
         finalized,
         candidateNames,
         votes,
-      }) : b));
+        paused,
+      });
     } catch (err) {
-      console.error("refreshBallot failed", err);
-      setStatus("Failed to refresh ballot. See console for details.");
+      console.error("Failed to load ballot:", err);
+      setStatus("Failed to load ballot: " + (err?.message || String(err)));
+    } finally {
+      setLoadingBallot(false);
     }
   }
 
@@ -178,27 +142,25 @@ export default function Results() {
   async function loadWinners(id) {
     setStatus(null);
     try {
-      const res = await getReadOnlyContract();
-      const contract = res.contract;
-      console.info("[Results] loadWinners using RPC:", res.url);
-
-      const [names, winningVotes] = await contract.getWinners(id);
-      return { names: names || [], winningVotes: Number(winningVotes || 0) };
+      const { contract } = await getReadOnlyContract();
+      const res = await contract.getWinners(id);
+      const names = res[0] || [];
+      const winningVotes = Number(res[1] || 0);
+      setStatus(`Winner(s): ${names.join(", ")} (votes: ${winningVotes})`);
     } catch (err) {
       console.error("getWinners failed", err);
-      return { error: friendlyErrorMessage(err) };
+      setStatus("Failed to load winners: " + friendlyErrorMessage(err));
     }
   }
 
-  // finalize ballot (owner-only) — prompts MetaMask
+  // finalize ballot (owner-only)
   async function finalizeBallot(id) {
     setStatus(null);
 
-    // ensure connected
     if (!connectedAddress) {
       try {
         await connect();
-        await new Promise(r => setTimeout(r, 200));
+        await new Promise((r) => setTimeout(r, 200));
       } catch (err) {
         setStatus("Wallet connect failed: " + friendlyErrorMessage(err));
         return;
@@ -206,27 +168,25 @@ export default function Results() {
     }
 
     if (!ownersAddress) {
-      setStatus("Contract owner unknown — cannot finalize from UI.");
+      setStatus("Contract owner unknown; cannot finalize.");
       return;
     }
-    if (ownersAddress.toLowerCase() !== (connectedAddress || "").toLowerCase()) {
+    if ((connectedAddress || "").toLowerCase() !== (ownersAddress || "").toLowerCase()) {
       setStatus("Only contract owner may finalize ballots.");
       return;
     }
 
-    // confirm with user
-    const ok = window.confirm("Finalize ballot? This will lock results (finalizeBallot). Proceed?");
-    if (!ok) return;
+    if (!window.confirm(`Finalize ballot ${id}? This locks results.`)) return;
 
     setBusy(true);
-    setStatus("Sending finalize transaction — confirm in MetaMask...");
+    setStatus("Sending finalize tx — confirm in MetaMask...");
     try {
       const { contract } = await getSignerContract();
       const tx = await contract.finalizeBallot(id);
-      setStatus("Transaction submitted: " + tx.hash + " — waiting for confirmation...");
+      setStatus("Transaction submitted: " + tx.hash + " — waiting...");
       await tx.wait();
       setStatus("Ballot finalized ✅ Refreshing...");
-      await refreshBallot(id);
+      await loadBallotById(id);
     } catch (err) {
       console.error("finalizeBallot failed", err);
       setStatus("Finalize failed: " + friendlyErrorMessage(err));
@@ -235,10 +195,17 @@ export default function Results() {
     }
   }
 
+  async function refreshSelected() {
+    if (!selected) {
+      setStatus("No ballot selected to refresh.");
+      return;
+    }
+    await loadBallotById(selected.id);
+  }
+
   function tsToLocal(ts) {
     try {
-      const d = new Date(Number(ts) * 1000);
-      return d.toLocaleString();
+      return new Date(Number(ts) * 1000).toLocaleString();
     } catch {
       return String(ts);
     }
@@ -246,107 +213,72 @@ export default function Results() {
 
   return (
     <div style={{ padding: 12 }}>
-      <h2>Results</h2>
+      <h2>Results (search)</h2>
+
+      <div style={{ marginBottom: 12 }}>
+        <div><strong>Contract owner (RPC):</strong> {loadingOwner ? "loading..." : (ownersAddress || "not available")}</div>
+        <div><strong>Contract paused:</strong> {contractPaused === null ? "unknown" : contractPaused ? "yes" : "no"}</div>
+        <div><strong>Connected wallet:</strong> {connectedAddress || "not connected"}</div>
+      </div>
+
+      <div style={{ marginBottom: 12 }}>
+        <label>Ballot ID&nbsp;
+          <input
+            value={searchId}
+            onChange={(e) => setSearchId(e.target.value)}
+            style={{ width: 120, marginRight: 8 }}
+          />
+        </label>
+        <button onClick={() => loadBallotById(searchId)} disabled={loadingBallot}>
+          {loadingBallot ? "Loading..." : "Load Ballot"}
+        </button>
+        <button onClick={() => { setSearchId(""); setSelected(null); setStatus(null); }} style={{ marginLeft: 8 }}>Clear</button>
+      </div>
 
       {status && <div style={{ marginBottom: 8, color: "darkred" }}>{status}</div>}
 
-      {loading ? (
-        <div>Loading ballots...</div>
-      ) : ballots.length === 0 ? (
-        <div>No ballots found.</div>
+      {!selected ? (
+        <div>No ballot loaded. Use the search box above to load one ballot by id.</div>
       ) : (
-        <div style={{ display: "flex", gap: 24 }}>
-          <div style={{ minWidth: 300 }}>
-            <h3>Ballots</h3>
-            <ul>
-              {ballots.map(b => (
-                <li key={b.id} style={{ marginBottom: 6 }}>
-                  <button
-                    onClick={() => {
-                      setSelectedId(b.id);
-                      setStatus(null);
-                    }}
-                    style={{ fontWeight: b.id === selectedId ? "bold" : "normal" }}
-                  >
-                    [{b.id}] {b.title}
-                  </button>
-                  <div style={{ fontSize: 12, color: "#666" }}>
-                    {tsToLocal(b.startTs)} → {tsToLocal(b.endTs)} {b.finalized ? "(finalized)" : ""}
-                  </div>
-                </li>
-              ))}
-            </ul>
-            <div style={{ marginTop: 8 }}>
-              <button onClick={async () => {
-                setStatus("Refreshing...");
-                try {
-                  // reload page to re-run effects (keeps it simple)
-                  window.location.reload();
-                } catch (err) {
-                  console.error("refresh all failed", err);
-                  setStatus("Refresh failed; see console.");
-                }
-              }}>Refresh All</button>
+        <div>
+          <div style={{ marginBottom: 8 }}>
+            <strong>[{selected.id}] {selected.title}</strong>
+            <div style={{ fontSize: 13, color: "#555" }}>
+              {tsToLocal(selected.startTs)} → {tsToLocal(selected.endTs)} {selected.finalized ? "(finalized)" : "(not finalized)"}
+              {selected.paused && <span style={{ color: "orange", marginLeft: 12 }}>Contract paused</span>}
             </div>
           </div>
 
-          <div style={{ flex: 1 }}>
-            <h3>Selected</h3>
-            {!selected ? (
-              <div>Select a ballot to view results.</div>
+          <div>
+            <h4>Candidates & votes</h4>
+            <ul>
+              {selected.candidateNames.map((n, idx) => (
+                <li key={idx}>
+                  {n} — {selected.votes && selected.votes[idx] != null ? selected.votes[idx] : "—"}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div style={{ marginTop: 12 }}>
+            {selected.finalized ? (
+              <div>
+                <button onClick={() => loadWinners(selected.id)}>Show winners</button>
+                <button onClick={refreshSelected} style={{ marginLeft: 8 }}>Refresh</button>
+              </div>
             ) : (
               <div>
-                <div><strong>{selected.title}</strong></div>
-                <div style={{ fontSize: 13, color: "#444", marginBottom: 8 }}>
-                  {tsToLocal(selected.startTs)} → {tsToLocal(selected.endTs)} {selected.finalized ? "(finalized)" : "(not finalized)"}
-                </div>
-
-                <div>
-                  <h4>Candidates & votes</h4>
-                  <ul>
-                    {selected.candidateNames.map((n, idx) => (
-                      <li key={idx}>
-                        {n} — {selected.votes && selected.votes[idx] != null ? selected.votes[idx] : "—"}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div style={{ marginTop: 12 }}>
-                  {selected.finalized ? (
-                    <div>
-                      <button onClick={async () => {
-                        setStatus("Loading winners...");
-                        const res = await loadWinners(selected.id);
-                        if (res?.error) {
-                          setStatus("Failed to load winners: " + res.error);
-                        } else {
-                          const names = res.names || [];
-                          const votes = res.winningVotes;
-                          setStatus(`Winner(s): ${names.join(", ")} (votes: ${votes})`);
-                        }
-                      }}>Show winners</button>
-                      <button onClick={() => refreshBallot(selected.id)} style={{ marginLeft: 8 }}>Refresh</button>
-                    </div>
-                  ) : (
-                    <div>
-                      <div style={{ marginBottom: 8, color: "#777" }}>This ballot has not been finalized yet.</div>
-
-                      {ownersAddress && ownersAddress.toLowerCase() === (connectedAddress || "").toLowerCase() ? (
-                        <div>
-                          <button onClick={() => finalizeBallot(selected.id)} disabled={busy}>
-                            {busy ? "Finalizing..." : "Finalize ballot (owner only)"}
-                          </button>
-                          <button onClick={() => refreshBallot(selected.id)} style={{ marginLeft: 8 }}>Refresh</button>
-                        </div>
-                      ) : (
-                        <div>
-                          <button onClick={() => refreshBallot(selected.id)}>Refresh</button>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
+                <div style={{ marginBottom: 8, color: "#777" }}>This ballot has not been finalized yet.</div>
+                {ownersAddress && ownersAddress.toLowerCase() === (connectedAddress || "").toLowerCase() ? (
+                  <div>
+                    <button onClick={() => finalizeBallot(selected.id)} disabled={busy}>{busy ? "Finalizing..." : "Finalize ballot (owner only)"}</button>
+                    <button onClick={refreshSelected} style={{ marginLeft: 8 }}>Refresh</button>
+                  </div>
+                ) : (
+                  <div>
+                    <button onClick={refreshSelected}>Refresh</button>
+                  </div>
+                )}
               </div>
             )}
           </div>
