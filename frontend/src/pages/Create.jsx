@@ -4,16 +4,27 @@ import { useWallet } from "../context/WalletContext";
 import { getReadOnlyContract, getSignerContract } from "../api/contract";
 
 /**
- * Create.jsx (fixed: removed invalid optional-chaining + `new` expression)
+ * Create.jsx
  *
- * Edge cases handled:
- *  - Missing MetaMask
- *  - Missing REACT_APP_* env variables (contract.js throws)
- *  - Owner mismatch
- *  - User cancels MetaMask confirm (code 4001)
- *  - Transaction revert / insufficient funds
- *  - Network mismatch (wallet vs RPC) — best-effort check using getSignerContract()
+ * - Prevents selecting past start times by using input `min` and runtime validation
+ * - Keeps your existing protections (owner check, network check, etc.)
  */
+
+function toLocalDatetimeInputString(d = new Date()) {
+  // returns YYYY-MM-DDTHH:mm for datetime-local input (local timezone)
+  const pad = (n) => String(n).padStart(2, "0");
+  return (
+    d.getFullYear() +
+    "-" +
+    pad(d.getMonth() + 1) +
+    "-" +
+    pad(d.getDate()) +
+    "T" +
+    pad(d.getHours()) +
+    ":" +
+    pad(d.getMinutes())
+  );
+}
 
 export default function Create() {
   const { address: connectedAddress, connect } = useWallet();
@@ -30,15 +41,23 @@ export default function Create() {
   const [busy, setBusy] = useState(false);
   const [statusMessage, setStatusMessage] = useState(null);
 
+  // min allowed start (datetime-local string)
+  const [minStartLocal, setMinStartLocal] = useState(toLocalDatetimeInputString());
+
+  // update minStartLocal every time component mounts (keeps it fresh)
+  useEffect(() => {
+    setMinStartLocal(toLocalDatetimeInputString());
+    // optional: you could update every minute with a timer to keep min fresh,
+    // but this is usually enough for ordinary use.
+  }, []);
+
   // Load owner using read-only RPC once on mount
-    // Load owner using read-only RPC once on mount
   useEffect(() => {
     let mounted = true;
     async function loadOwner() {
       setLoadingOwner(true);
       setStatusMessage(null);
       try {
-        // <-- AWAIT the async initializer
         const res = await getReadOnlyContract();
         const contract = res.contract;
         const provider = res.provider;
@@ -83,10 +102,15 @@ export default function Create() {
   function validateInputs() {
     if (!title.trim()) return "Title is required.";
     if (!startIso || !endIso) return "Start and end time are required.";
+
     const startTs = Math.floor(new Date(startIso).getTime() / 1000);
     const endTs = Math.floor(new Date(endIso).getTime() / 1000);
     if (isNaN(startTs) || isNaN(endTs)) return "Invalid start or end date.";
     if (startTs >= endTs) return "Start time must be before end time.";
+
+    const nowTs = Math.floor(Date.now() / 1000);
+    if (startTs <= nowTs) return "Start time must be in the future."; // <- new check
+
     const candidates = candidatesCsv.split(",").map(s => s.trim()).filter(Boolean);
     if (candidates.length === 0) return "Provide at least one candidate.";
     return null;
@@ -170,6 +194,8 @@ export default function Create() {
         await tx.wait();
         setStatusMessage("Ballot created successfully ✅");
         setTitle(""); setStartIso(""); setEndIso(""); setCandidatesCsv(""); setMerkleRoot("");
+        // refresh minStart to current time after creation
+        setMinStartLocal(toLocalDatetimeInputString());
       } catch (waitErr) {
         console.error("tx.wait failed:", waitErr);
         setStatusMessage("Transaction failed while waiting: " + friendlyErrorMessage(waitErr));
@@ -207,13 +233,37 @@ export default function Create() {
 
         <div style={{ marginBottom: 8 }}>
           <label>Start (local datetime)<br />
-            <input type="datetime-local" value={startIso} onChange={e => setStartIso(e.target.value)} />
+            <input
+              type="datetime-local"
+              value={startIso}
+              onChange={e => {
+                setStartIso(e.target.value);
+                // if end is set but earlier than new start, reset end
+                if (endIso && e.target.value) {
+                  const s = new Date(e.target.value).getTime();
+                  const en = new Date(endIso).getTime();
+                  if (!isNaN(s) && !isNaN(en) && en <= s) {
+                    setEndIso("");
+                  }
+                }
+              }}
+              min={minStartLocal}
+            />
           </label>
+          <div style={{ fontSize: 12, color: "#666" }}>
+            Note: start must be in the future (cannot pick a past date/time).
+          </div>
         </div>
 
         <div style={{ marginBottom: 8 }}>
           <label>End (local datetime)<br />
-            <input type="datetime-local" value={endIso} onChange={e => setEndIso(e.target.value)} />
+            <input
+              type="datetime-local"
+              value={endIso}
+              onChange={e => setEndIso(e.target.value)}
+              // ensure end min is either startIso (if selected) or minStartLocal
+              min={startIso || minStartLocal}
+            />
           </label>
         </div>
 

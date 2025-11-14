@@ -8,7 +8,10 @@ import Vote from "./pages/Vote";
 import Results from "./pages/Results";
 import AdminControl from "./components/AdminControl";
 import PausedBanner from "./components/PausedBanner";
+import Merkle from "./pages/MerkleGeneratorCSV";
+import ProofLookup from "./pages/ProofLookup.jsx";
 import Footer from "./components/Footer";
+import MerkleGeneratorCSV from "./pages/MerkleGeneratorCSV";
 
 function NotFound() {
   return (
@@ -31,6 +34,8 @@ export default function App() {
           <Route path="/vote" element={<Vote />} />
           <Route path="/results" element={<Results />} />
           <Route path="/admin" element={<AdminControl />} />
+          <Route path="/merkle" element={<MerkleGeneratorCSV />} />
+          <Route path="/proof-lookup" element={<ProofLookup/>} />
         </Routes>
       </div>
       <Footer />

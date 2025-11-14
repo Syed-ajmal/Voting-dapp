@@ -28,6 +28,12 @@ export default function NavBar() {
           <span style={{ marginLeft: 12 }}>
             <Link to="/admin">Admin</Link>
           </span>
+          <span style={{ marginLeft: 12 }}>
+            <Link to="/merkle">Merkle</Link>
+          </span>
+          <span style={{ marginLeft: 12 }}>
+            <Link to="/proof-lookup">Proof-lookup</Link>
+          </span>
         </div>
 
         <div>
