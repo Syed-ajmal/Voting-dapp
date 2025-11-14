@@ -6,18 +6,21 @@ import Home from "./pages/Home";
 import Create from "./pages/Create";
 import Vote from "./pages/Vote";
 import Results from "./pages/Results";
+import About from "./pages/About";
 import AdminControl from "./components/AdminControl";
+import AdminRoute from "./components/AdminRoute";
 import PausedBanner from "./components/PausedBanner";
-import Merkle from "./pages/MerkleGeneratorCSV";
 import ProofLookup from "./pages/ProofLookup.jsx";
 import Footer from "./components/Footer";
 import MerkleGeneratorCSV from "./pages/MerkleGeneratorCSV";
 
 function NotFound() {
   return (
-    <div style={{ padding: 12 }}>
-      <h2>Page not found</h2>
-      <p>The page you're looking for doesn't exist.</p>
+    <div className="container">
+      <div className="page-header">
+        <h1 className="page-title">Page Not Found</h1>
+        <p className="page-subtitle">The page you're looking for doesn't exist.</p>
+      </div>
     </div>
   );
 }
@@ -27,15 +30,17 @@ export default function App() {
     <BrowserRouter>
       <PausedBanner />
       <NavBar />
-      <div style={{ padding: 12 }}>
+      <div className="page">
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/create" element={<Create />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/create" element={<AdminRoute><Create /></AdminRoute>} />
           <Route path="/vote" element={<Vote />} />
           <Route path="/results" element={<Results />} />
-          <Route path="/admin" element={<AdminControl />} />
-          <Route path="/merkle" element={<MerkleGeneratorCSV />} />
+          <Route path="/admin" element={<AdminRoute><AdminControl /></AdminRoute>} />
+          <Route path="/merkle" element={<AdminRoute><MerkleGeneratorCSV /></AdminRoute>} />
           <Route path="/proof-lookup" element={<ProofLookup/>} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </div>
       <Footer />

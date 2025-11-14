@@ -1,0 +1,209 @@
+// ============================================
+// DESIGN SYSTEM VARIABLES
+// Blockchain-focused voting DApp
+// ============================================
+
+// ============================================
+// COLOR PALETTE
+// ============================================
+
+// Base Colors - Dark Theme (Default)
+$color-bg-primary: #0a0e1a;
+$color-bg-secondary: #111827;
+$color-bg-tertiary: #1a2332;
+$color-bg-elevated: #1f2937;
+$color-bg-overlay: rgba(10, 14, 26, 0.95);
+
+// Base Colors - Light Theme
+$color-bg-primary-light: #f8fafc;
+$color-bg-secondary-light: #ffffff;
+$color-bg-tertiary-light: #f1f5f9;
+$color-bg-elevated-light: #ffffff;
+$color-bg-overlay-light: rgba(248, 250, 252, 0.95);
+
+// Text Colors - Dark Theme
+$color-text-primary: #e5e7eb;
+$color-text-secondary: #9ca3af;
+$color-text-tertiary: #6b7280;
+$color-text-inverse: #0a0e1a;
+
+// Text Colors - Light Theme
+$color-text-primary-light: #111827;
+$color-text-secondary-light: #4b5563;
+$color-text-tertiary-light: #6b7280;
+$color-text-inverse-light: #ffffff;
+
+// Accent Colors (Professional Theme)
+$color-accent-primary: #2563eb;      // Blue
+$color-accent-secondary: #6366f1;   // Indigo
+$color-accent-tertiary: #10b981;    // Green
+$color-accent-warning: #f59e0b;     // Amber
+$color-accent-error: #ef4444;       // Red
+$color-accent-success: #10b981;     // Green
+
+// Accent Glows
+$color-glow-primary: rgba(0, 212, 255, 0.4);
+$color-glow-secondary: rgba(124, 58, 237, 0.4);
+$color-glow-tertiary: rgba(16, 185, 129, 0.4);
+$color-glow-warning: rgba(245, 158, 11, 0.4);
+$color-glow-error: rgba(239, 68, 68, 0.4);
+
+// Border Colors
+$color-border-primary: rgba(229, 231, 235, 0.1);
+$color-border-secondary: rgba(229, 231, 235, 0.2);
+$color-border-accent: rgba(0, 212, 255, 0.3);
+$color-border-primary-light: rgba(17, 24, 39, 0.1);
+$color-border-secondary-light: rgba(17, 24, 39, 0.2);
+
+// ============================================
+// TYPOGRAPHY
+// ============================================
+
+// Font Families
+$font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+$font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
+
+// Font Sizes (Modular Scale - 1.15 ratio)
+$font-size-xs: 0.6875rem;    // 11px
+$font-size-sm: 0.8125rem;     // 13px
+$font-size-base: 0.875rem;    // 14px
+$font-size-lg: 1rem;          // 16px
+$font-size-xl: 1.125rem;      // 18px
+$font-size-2xl: 1.375rem;     // 22px
+$font-size-3xl: 1.625rem;     // 26px
+$font-size-4xl: 1.875rem;    // 30px
+
+// Font Weights
+$font-weight-light: 300;
+$font-weight-normal: 400;
+$font-weight-medium: 500;
+$font-weight-semibold: 600;
+$font-weight-bold: 700;
+$font-weight-extrabold: 800;
+
+// Line Heights
+$line-height-tight: 1.25;
+$line-height-normal: 1.5;
+$line-height-relaxed: 1.75;
+
+// Letter Spacing
+$letter-spacing-tight: -0.025em;
+$letter-spacing-normal: 0;
+$letter-spacing-wide: 0.025em;
+$letter-spacing-wider: 0.05em;
+
+// ============================================
+// SPACING SYSTEM (8px base unit)
+// ============================================
+
+$spacing-0: 0;
+$spacing-1: 0.25rem;   // 4px
+$spacing-2: 0.5rem;    // 8px
+$spacing-3: 0.75rem;   // 12px
+$spacing-4: 1rem;      // 16px
+$spacing-5: 1.25rem;   // 20px
+$spacing-6: 1.5rem;    // 24px
+$spacing-8: 2rem;      // 32px
+$spacing-10: 2.5rem;   // 40px
+$spacing-12: 3rem;     // 48px
+$spacing-16: 4rem;     // 64px
+$spacing-20: 5rem;     // 80px
+$spacing-24: 6rem;     // 96px
+
+// ============================================
+// BREAKPOINTS (Mobile-first)
+// ============================================
+
+$breakpoint-xs: 0;
+$breakpoint-sm: 640px;
+$breakpoint-md: 768px;
+$breakpoint-lg: 1024px;
+$breakpoint-xl: 1280px;
+$breakpoint-2xl: 1536px;
+
+// ============================================
+// BORDER RADIUS
+// ============================================
+
+$radius-sm: 0.25rem;   // 4px
+$radius-md: 0.5rem;    // 8px
+$radius-lg: 0.75rem;   // 12px
+$radius-xl: 1rem;      // 16px
+$radius-2xl: 1.5rem;   // 24px
+$radius-full: 9999px;
+
+// ============================================
+// SHADOWS
+// ============================================
+
+$shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+$shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+$shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+$shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+$shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+
+// Neon Glow Shadows
+$shadow-glow-primary: 0 0 20px $color-glow-primary, 0 0 40px $color-glow-primary;
+$shadow-glow-secondary: 0 0 20px $color-glow-secondary, 0 0 40px $color-glow-secondary;
+$shadow-glow-tertiary: 0 0 20px $color-glow-tertiary, 0 0 40px $color-glow-tertiary;
+
+// ============================================
+// TRANSITIONS & ANIMATIONS
+// ============================================
+
+$transition-fast: 150ms ease;
+$transition-base: 250ms ease;
+$transition-slow: 350ms ease;
+$transition-slower: 500ms ease;
+
+$animation-duration-fast: 0.15s;
+$animation-duration-base: 0.25s;
+$animation-duration-slow: 0.35s;
+$animation-duration-slower: 0.5s;
+
+// ============================================
+// Z-INDEX SCALE
+// ============================================
+
+$z-index-base: 0;
+$z-index-dropdown: 1000;
+$z-index-sticky: 1020;
+$z-index-fixed: 1030;
+$z-index-modal-backdrop: 1040;
+$z-index-modal: 1050;
+$z-index-popover: 1060;
+$z-index-tooltip: 1070;
+
+// ============================================
+// LAYOUT
+// ============================================
+
+$container-max-width: 1280px;
+$container-padding: $spacing-4;
+$container-padding-sm: $spacing-2;
+$container-padding-lg: $spacing-6;
+
+// ============================================
+// COMPONENT SPECIFIC
+// ============================================
+
+// Buttons
+$button-height-sm: 1.75rem;
+$button-height-md: 2rem;
+$button-height-lg: 2.5rem;
+
+// Inputs
+$input-height-sm: 1.75rem;
+$input-height-md: 2rem;
+$input-height-lg: 2.5rem;
+$input-padding-x: $spacing-2;
+$input-padding-y: $spacing-1;
+
+// Cards
+$card-padding: $spacing-4;
+$card-padding-sm: $spacing-3;
+
+// Navbar
+$navbar-height: 3.5rem;
+$navbar-height-mobile: 3rem;
+

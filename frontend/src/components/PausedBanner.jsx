@@ -68,16 +68,9 @@ export default function PausedBanner() {
   if (paused !== true) return null;
 
   return (
-    <div style={{
-      background: "#fff4e5",
-      borderBottom: "1px solid #ffd89a",
-      padding: "10px 14px",
-      textAlign: "center",
-      color: "#7a4a00",
-      fontWeight: 600
-    }}>
+    <div className="banner banner-warning">
       ⚠️ Contract is currently <span style={{ textDecoration: "underline" }}>PAUSED</span>. All state-changing actions (create, vote, extend, update) are disabled until the owner unpauses the contract.
-      {error ? <div style={{ fontWeight: 400, marginTop: 6, fontSize: 13, color: "#7a4a00" }}>{error}</div> : null}
+      {error ? <div style={{ fontWeight: 400, marginTop: 6, fontSize: 13 }}>{error}</div> : null}
     </div>
   );
 }

@@ -1,0 +1,159 @@
+// ============================================
+// MAIN STYLESHEET
+// Blockchain Voting DApp - Complete Styling System
+// ============================================
+
+// Core
+@import 'variables';
+@import 'mixins';
+@import 'base';
+@import 'animations';
+@import 'layout';
+@import 'components';
+
+// ============================================
+// THEME SYSTEM
+// ============================================
+
+:root {
+  // Default to dark theme
+  color-scheme: dark;
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+}
+
+// ============================================
+// GLOBAL UTILITIES
+// ============================================
+
+.wallet-address {
+  @include font-mono;
+  font-size: $font-size-xs;
+  color: $color-accent-primary;
+  padding: $spacing-1 $spacing-2;
+  background-color: rgba($color-accent-primary, 0.1);
+  border-radius: $radius-sm;
+  border: 1px solid rgba($color-accent-primary, 0.2);
+
+  @include respond-to(md) {
+    font-size: $font-size-xs;
+    padding: $spacing-1 $spacing-2;
+  }
+}
+
+.ballot-id {
+  @include font-mono;
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+  font-weight: $font-weight-semibold;
+
+  @include theme-light {
+    color: $color-text-tertiary-light;
+  }
+}
+
+.candidate-list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-3;
+  margin: $spacing-4 0;
+}
+
+.candidate-item {
+  display: flex;
+  align-items: center;
+  gap: $spacing-3;
+  padding: $spacing-3;
+  border-radius: $radius-md;
+  background-color: $color-bg-tertiary;
+  border: 1px solid $color-border-primary;
+  transition: all $transition-base;
+
+  @include theme-light {
+    background-color: $color-bg-tertiary-light;
+    border-color: $color-border-primary-light;
+  }
+
+  &:hover {
+    border-color: $color-border-accent;
+    background-color: $color-bg-elevated;
+
+    @include theme-light {
+      background-color: $color-bg-elevated-light;
+    }
+  }
+}
+
+.vote-count {
+  @include font-mono;
+  font-size: $font-size-lg;
+  font-weight: $font-weight-bold;
+  color: $color-accent-primary;
+  margin-left: auto;
+}
+
+// ============================================
+// WINNER DISPLAY
+// ============================================
+
+.winner-card {
+  border: 2px solid $color-accent-success !important;
+  background-color: rgba($color-accent-success, 0.05);
+
+  @include theme-light {
+    background-color: rgba($color-accent-success, 0.08);
+  }
+}
+
+.winner-title {
+  color: $color-accent-success !important;
+}
+
+.winner-names {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-2;
+}
+
+.winner-badge {
+  font-size: $font-size-sm !important;
+  padding: $spacing-1 $spacing-3 !important;
+  font-weight: $font-weight-semibold;
+}
+
+// ============================================
+// RESPONSIVE ADJUSTMENTS
+// ============================================
+
+@include respond-below(md) {
+  .page {
+    padding: $spacing-4 $spacing-2;
+  }
+
+  .card {
+    padding: $card-padding-sm;
+  }
+
+  .navbar-nav {
+    font-size: $font-size-sm;
+  }
+}
+
+// ============================================
+// PRINT STYLES
+// ============================================
+
+@media print {
+  .navbar,
+  .footer,
+  .btn {
+    display: none;
+  }
+
+  .page {
+    padding: 0;
+  }
+}
+

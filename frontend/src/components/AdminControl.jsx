@@ -328,127 +328,180 @@ export default function AdminControl() {
   }
 
   return (
-    <div style={{ padding: 12 }}>
-      <h2>Admin Control</h2>
-
-      <div style={{ marginBottom: 10 }}>
-        <div><strong>Contract owner (RPC):</strong> {ownerAddress || (loading ? "loading..." : "not available")}</div>
-        <div><strong>Connected wallet:</strong> {connectedAddress || "not connected"}</div>
-        <div><strong>Contract paused:</strong> {contractPaused === null ? "unknown" : contractPaused ? "yes" : "no"}</div>
+    <div className="container">
+      <div className="page-header">
+        <h1 className="page-title">Admin Control</h1>
+        <p className="page-subtitle">Manage contract and ballots (owner only)</p>
       </div>
 
-      {/* Pause toggle */}
-      <div style={{ marginBottom: 12 }}>
-        <button onClick={togglePause} disabled={busy || !isOwnerConnected()}>
-          {busy ? "Working..." : (contractPaused ? "Unpause Contract" : "Pause Contract")}
-        </button>
-        {!isOwnerConnected() && <span style={{ marginLeft: 8, color: "red" }}>Owner only</span>}
+      <div className="card mb-6">
+        <div className="mb-4">
+          <div className="mb-2"><strong>Contract owner (RPC):</strong> {loading ? <span className="spinner" style={{ marginLeft: 8 }}></span> : <span className="address">{ownerAddress || "not available"}</span>}</div>
+          <div className="mb-2"><strong>Connected wallet:</strong> {connectedAddress ? <span className="address">{connectedAddress}</span> : "not connected"}</div>
+          <div className="mb-2"><strong>Contract paused:</strong> {contractPaused === null ? "unknown" : contractPaused ? <span className="badge badge-warning">yes</span> : <span className="badge badge-success">no</span>}</div>
+        </div>
+
+        {/* Pause toggle */}
+        <div className="mb-4">
+          <button 
+            className="btn btn-primary btn-sm" 
+            onClick={togglePause} 
+            disabled={busy || !isOwnerConnected()}
+          >
+            {busy ? "Working..." : (contractPaused ? "Unpause Contract" : "Pause Contract")}
+          </button>
+          {!isOwnerConnected() && <span className="status-message status-message-error" style={{ marginLeft: 8, display: "inline-block" }}>Owner only</span>}
+        </div>
       </div>
 
-      {status && <div style={{ marginBottom: 12, color: "darkred" }}>{status}</div>}
+      {status && (
+        <div className={`status-message ${status.includes("✅") ? "status-message-success" : "status-message-error"} mb-4`}>
+          {status}
+        </div>
+      )}
 
-      {/* Ballot search/load (to avoid loading all ballots at once) */}
-      <div style={{ marginBottom: 12 }}>
-        <label>
-          Load ballot ID&nbsp;
-          <input
-            type="number"
-            value={loadBallotId}
-            onChange={(e) => setLoadBallotId(e.target.value)}
-            style={{ width: 120 }}
-            placeholder="e.g. 0"
-          />
-        </label>
-        <button
-          onClick={async () => {
-            setStatus("Loading ballot...");
-            try {
-              const id = Number(loadBallotId);
-              if (isNaN(id)) throw new Error("Provide a numeric ballot id");
-              await refreshBallot(id);
-              setStatus(null);
-            } catch (err) {
-              console.error("Load ballot failed", err);
-              setStatus("Failed to load ballot: " + (err?.message || String(err)));
-            }
-          }}
-          style={{ marginLeft: 8 }}
-          disabled={busy}
-        >
-          Load Ballot
-        </button>
-        <button
-          onClick={() => {
-            setBallots([]);
-            setLoadBallotId("");
-            setStatus(null);
-          }}
-          style={{ marginLeft: 8 }}
-        >
-          Clear
-        </button>
+      {/* Ballot search/load */}
+      <div className="card mb-6">
+        <div className="form-group mb-0">
+          <div className="flex flex-wrap items-center gap-3">
+            <label className="form-label mb-0">
+              Load ballot ID&nbsp;
+              <input
+                className="form-input"
+                type="number"
+                value={loadBallotId}
+                onChange={(e) => setLoadBallotId(e.target.value)}
+                style={{ width: 120 }}
+                placeholder="e.g. 0"
+              />
+            </label>
+            <button
+              className="btn btn-primary btn-sm"
+              onClick={async () => {
+                setStatus("Loading ballot...");
+                try {
+                  const id = Number(loadBallotId);
+                  if (isNaN(id)) throw new Error("Provide a numeric ballot id");
+                  await refreshBallot(id);
+                  setStatus(null);
+                } catch (err) {
+                  console.error("Load ballot failed", err);
+                  setStatus("Failed to load ballot: " + (err?.message || String(err)));
+                }
+              }}
+              disabled={busy}
+            >
+              Load Ballot
+            </button>
+            <button
+              className="btn btn-secondary btn-sm"
+              onClick={() => {
+                setBallots([]);
+                setLoadBallotId("");
+                setStatus(null);
+              }}
+            >
+              Clear
+            </button>
+          </div>
+        </div>
       </div>
 
       {loading ? (
-        <div>Loading contract metadata...</div>
+        <div className="card">
+          <div className="flex items-center justify-center gap-3">
+            <span className="spinner"></span>
+            <span>Loading contract metadata...</span>
+          </div>
+        </div>
       ) : ballots.length === 0 ? (
-        <div>No ballot loaded. Use the search box above to load one ballot by id.</div>
+        <div className="card">
+          <p className="text-center">No ballot loaded. Use the search box above to load one ballot by id.</p>
+        </div>
       ) : (
         <div>
           {ballots.map(b => (
-            <div key={b.id} style={{ border: "1px solid #eee", padding: 10, marginBottom: 10 }}>
-              <div style={{ fontWeight: "600" }}>[{b.id}] {b.title}</div>
-              <div style={{ fontSize: 13, color: "#555" }}>
-                {tsToLocal(b.startTs)} → {tsToLocal(b.endTs)} {b.finalized ? "(finalized)" : ""}
+            <div key={b.id} className="card mb-6">
+              <div className="card-header">
+                <h2 className="card-title">[{b.id}] {b.title}</h2>
+                <div className="text-sm">
+                  {tsToLocal(b.startTs)} → {tsToLocal(b.endTs)} {b.finalized && <span className="badge badge-success">Finalized</span>}
+                </div>
               </div>
 
-              <div style={{ marginTop: 8 }}>
-                <div>
-                  <strong>Merkle root:</strong><br />
-                  <input
-                    value={merkleInputs[b.id] ?? (b.merkleRoot || "")}
-                    onChange={e => setMerkleInput(b.id, e.target.value)}
-                    placeholder="0x... or leave blank to clear"
-                    style={{ width: "70%" }}
-                    disabled={!isOwnerConnected() || busy}
-                  />
-                  <button onClick={() => doUpdateMerkle(b.id)} disabled={!isOwnerConnected() || busy} style={{ marginLeft: 8 }}>
-                    Update Merkle Root
-                  </button>
+              <div className="card-body">
+                <div className="form-group">
+                  <label className="form-label">Merkle root</label>
+                  <div className="flex gap-3 flex-wrap items-end">
+                    <input
+                      className="form-input text-mono"
+                      value={merkleInputs[b.id] ?? (b.merkleRoot || "")}
+                      onChange={e => setMerkleInput(b.id, e.target.value)}
+                      placeholder="0x... or leave blank to clear"
+                      style={{ flex: 1, minWidth: 200 }}
+                      disabled={!isOwnerConnected() || busy}
+                    />
+                    <button 
+                      className="btn btn-secondary btn-sm" 
+                      onClick={() => doUpdateMerkle(b.id)} 
+                      disabled={!isOwnerConnected() || busy}
+                    >
+                      Update Merkle Root
+                    </button>
+                  </div>
                 </div>
 
-                <div style={{ marginTop: 8 }}>
-                  <strong>Extend end time:</strong><br />
-                  <input
-                    type="datetime-local"
-                    value={endInputs[b.id] ?? ""}
-                    onChange={e => setEndInput(b.id, e.target.value)}
-                    disabled={!isOwnerConnected() || busy}
-                  />
-                  <button onClick={() => doExtendEnd(b.id)} disabled={!isOwnerConnected() || busy} style={{ marginLeft: 8 }}>
-                    Extend End
-                  </button>
+                <div className="form-group">
+                  <label className="form-label">Extend end time</label>
+                  <div className="flex gap-3 flex-wrap items-end">
+                    <input
+                      className="form-input"
+                      type="datetime-local"
+                      value={endInputs[b.id] ?? ""}
+                      onChange={e => setEndInput(b.id, e.target.value)}
+                      disabled={!isOwnerConnected() || busy}
+                      style={{ flex: 1, minWidth: 200 }}
+                    />
+                    <button 
+                      className="btn btn-secondary btn-sm" 
+                      onClick={() => doExtendEnd(b.id)} 
+                      disabled={!isOwnerConnected() || busy}
+                    >
+                      Extend End
+                    </button>
+                  </div>
                 </div>
 
-                <div style={{ marginTop: 8 }}>
-                  <button onClick={() => doFinalize(b.id)} disabled={!isOwnerConnected() || busy || b.finalized}>
+                <div className="mb-4">
+                  <h4 className="mb-3">Candidates & Votes</h4>
+                  <div className="candidate-list">
+                    {b.candidateNames.map((n, idx) => (
+                      <div key={idx} className="candidate-item">
+                        <span style={{ flex: 1 }}>{n}</span>
+                        <span className="vote-count">{b.votes && b.votes[idx] != null ? b.votes[idx] : "—"}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="card-footer">
+                <div className="flex gap-3 flex-wrap">
+                  <button 
+                    className="btn btn-primary btn-sm" 
+                    onClick={() => doFinalize(b.id)} 
+                    disabled={!isOwnerConnected() || busy || b.finalized}
+                  >
                     Finalize Ballot
                   </button>
-                  <button onClick={() => refreshBallot(b.id)} style={{ marginLeft: 8 }} disabled={busy}>
+                  <button 
+                    className="btn btn-secondary btn-sm" 
+                    onClick={() => refreshBallot(b.id)} 
+                    disabled={busy}
+                  >
                     Refresh
                   </button>
                 </div>
-              </div>
-
-              <div style={{ marginTop: 10 }}>
-                <h4>Candidates & votes</h4>
-                <ul>
-                  {b.candidateNames.map((n, idx) => (
-                    <li key={idx}>
-                      {n} — {b.votes && b.votes[idx] != null ? b.votes[idx] : "—"}
-                    </li>
-                  ))}
-                </ul>
               </div>
             </div>
           ))}

@@ -227,82 +227,123 @@ export default function Vote() {
   }
 
   return (
-    <div style={{ padding: 12 }}>
-      <h2>Vote</h2>
-
-      <div style={{ marginBottom: 12 }}>
-        <label>Ballot ID&nbsp;
-          <input
-            value={ballotIdInput}
-            onChange={(e) => setBallotIdInput(e.target.value)}
-            style={{ width: 120 }}
-          />
-        </label>
-        <button onClick={() => loadBallotById(ballotIdInput)} style={{ marginLeft: 8 }}>Load Ballot</button>
-        <button onClick={() => { setBallot(null); setCandidates([]); setSelectedCandidate(""); setStatus(null); setBallotIdInput(""); }} style={{ marginLeft: 8 }}>Clear</button>
-        <button onClick={() => navigate("/")} style={{ marginLeft: 8 }}>Home</button>
+    <div className="container">
+      <div className="page-header">
+        <h1 className="page-title">Vote</h1>
+        <p className="page-subtitle">Cast your vote on a ballot</p>
       </div>
 
-      {loading && <div>Loading ballot...</div>}
+      <div className="card mb-6">
+        <div className="form-group mb-0">
+          <div className="flex flex-wrap items-center gap-3">
+            <label className="form-label mb-0">
+              Ballot ID&nbsp;
+              <input
+                className="form-input"
+                value={ballotIdInput}
+                onChange={(e) => setBallotIdInput(e.target.value)}
+                style={{ width: 120 }}
+              />
+            </label>
+            <button className="btn btn-primary btn-sm" onClick={() => loadBallotById(ballotIdInput)}>
+              Load Ballot
+            </button>
+            <button 
+              className="btn btn-secondary btn-sm"
+              onClick={() => { setBallot(null); setCandidates([]); setSelectedCandidate(""); setStatus(null); setBallotIdInput(""); }}
+            >
+              Clear
+            </button>
+            <button className="btn btn-ghost btn-sm" onClick={() => navigate("/")}>
+              Home
+            </button>
+          </div>
+        </div>
+      </div>
 
-      {status && <div style={{ marginBottom: 8, color: "darkred" }}>{status}</div>}
+      {loading && (
+        <div className="card">
+          <div className="flex items-center justify-center gap-3">
+            <span className="spinner"></span>
+            <span>Loading ballot...</span>
+          </div>
+        </div>
+      )}
+
+      {status && (
+        <div className={`status-message ${status.includes("✅") ? "status-message-success" : "status-message-error"} mb-4`}>
+          {status}
+        </div>
+      )}
 
       {!ballot ? (
-        <div>Load a ballot by id (from Home → Vote button or enter an ID) to see candidate list.</div>
+        <div className="card">
+          <p className="text-center">Load a ballot by id (from Home → Vote button or enter an ID) to see candidate list.</p>
+        </div>
       ) : (
-        <div>
-          <div style={{ marginBottom: 8 }}>
-            <strong>{ballot.title}</strong>
-            <div style={{ fontSize: 13, color: "#555" }}>
-              {tsToLocal(ballot.start)} → {tsToLocal(ballot.end)} {ballot.finalized ? "(finalized)" : ""}
-              {isPaused === true && <span style={{ color: "orange", marginLeft: 12 }}>Contract paused</span>}
+        <div className="card">
+          <div className="card-header">
+            <h2 className="card-title">{ballot.title}</h2>
+            <div className="text-sm mb-2">
+              {tsToLocal(ballot.start)} → {tsToLocal(ballot.end)} {ballot.finalized && <span className="badge badge-success">Finalized</span>}
+              {isPaused === true && <span className="badge badge-warning" style={{ marginLeft: 8 }}>Contract paused</span>}
             </div>
-            <div style={{ marginTop: 6, fontSize: 13 }}>
-              {userHasVoted ? <em>You already voted in this ballot.</em> : <em>You have not voted yet.</em>}
+            <div className="text-sm">
+              {userHasVoted ? (
+                <span className="badge badge-primary">You already voted in this ballot</span>
+              ) : (
+                <span className="badge">You have not voted yet</span>
+              )}
             </div>
           </div>
 
           <form onSubmit={submitVote}>
-            <div style={{ marginBottom: 8 }}>
-              <label>Candidates</label>
-              <div>
-                {candidates.length === 0 ? <div>No candidates found.</div> :
+            <div className="form-group">
+              <label className="form-label">Candidates</label>
+              <div className="candidate-list">
+                {candidates.length === 0 ? (
+                  <div className="text-center">No candidates found.</div>
+                ) : (
                   candidates.map((c, idx) => (
-                    <div key={idx}>
-                      <label>
-                        <input
-                          type="radio"
-                          name="candidate"
-                          value={c}
-                          checked={selectedCandidate === c}
-                          onChange={() => setSelectedCandidate(c)}
-                          disabled={userHasVoted || busy}
-                        />
-                        {" "}{c}
+                    <div key={idx} className="candidate-item">
+                      <input
+                        type="radio"
+                        name="candidate"
+                        value={c}
+                        checked={selectedCandidate === c}
+                        onChange={() => setSelectedCandidate(c)}
+                        disabled={userHasVoted || busy}
+                        className="form-radio"
+                      />
+                      <label style={{ cursor: "pointer", flex: 1 }} onClick={() => !userHasVoted && !busy && setSelectedCandidate(c)}>
+                        {c}
                       </label>
                     </div>
                   ))
-                }
+                )}
               </div>
             </div>
 
             {merkleRoot && merkleRoot !== "0x" + "0".repeat(64) && (
-              <div style={{ marginBottom: 8 }}>
-                <label>Merkle proof (comma-separated leaves, if required)<br />
-                  <input
-                    placeholder="0xab...,0xcd...,..."
-                    value={merkleProofText}
-                    onChange={(e) => setMerkleProofText(e.target.value)}
-                    style={{ width: "100%" }}
-                    disabled={busy}
-                  />
-                </label>
-                <div style={{ fontSize: 12, color: "#666" }}>If this ballot is whitelisted, paste a comma-separated Merkle proof (hex bytes32 entries).</div>
+              <div className="form-group">
+                <label className="form-label">Merkle proof (comma-separated leaves, if required)</label>
+                <input
+                  className="form-input text-mono"
+                  placeholder="0xab...,0xcd...,..."
+                  value={merkleProofText}
+                  onChange={(e) => setMerkleProofText(e.target.value)}
+                  disabled={busy}
+                />
+                <div className="form-help">If this ballot is whitelisted, paste a comma-separated Merkle proof (hex bytes32 entries).</div>
               </div>
             )}
 
-            <div style={{ marginTop: 10 }}>
-              <button type="submit" disabled={busy || userHasVoted || ballot.finalized || isPaused === true}>
+            <div className="mt-6">
+              <button 
+                type="submit" 
+                className="btn btn-primary btn-lg btn-full"
+                disabled={busy || userHasVoted || ballot.finalized || isPaused === true}
+              >
                 {busy ? "Submitting..." : "Vote"}
               </button>
             </div>

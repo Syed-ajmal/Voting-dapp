@@ -1,0 +1,675 @@
+// ============================================
+// COMPONENT STYLES
+// ============================================
+
+@import 'variables';
+@import 'mixins';
+
+// ============================================
+// BUTTONS
+// ============================================
+
+.btn {
+  @include button-base;
+  height: $button-height-md;
+  padding: 0 $spacing-3;
+  border-radius: $radius-md;
+  font-size: $font-size-sm;
+}
+
+.btn-primary {
+  @include button-primary;
+
+  @include theme-light {
+    background: $color-accent-primary;
+    color: $color-text-inverse-light;
+
+    &:hover:not(:disabled) {
+      background: darken($color-accent-primary, 8%);
+    }
+  }
+}
+
+.btn-secondary {
+  @include button-secondary;
+}
+
+.btn-ghost {
+  @include button-ghost;
+}
+
+.btn-sm {
+  height: $button-height-sm;
+  padding: 0 $spacing-2;
+  font-size: $font-size-xs;
+}
+
+.btn-lg {
+  height: $button-height-lg;
+  padding: 0 $spacing-4;
+  font-size: $font-size-base;
+}
+
+.btn-full {
+  width: 100%;
+}
+
+// ============================================
+// CARDS
+// ============================================
+
+.card {
+  background-color: $color-bg-elevated;
+  border: 1px solid $color-border-primary;
+  border-radius: $radius-lg;
+  padding: $card-padding;
+  transition: all $transition-base;
+  position: relative;
+  overflow: hidden;
+
+  @include theme-light {
+    background-color: $color-bg-elevated-light;
+    border-color: $color-border-primary-light;
+    box-shadow: $shadow-sm;
+  }
+
+  &:hover {
+    border-color: $color-border-secondary;
+    box-shadow: $shadow-md;
+
+    @include theme-light {
+      box-shadow: $shadow-md;
+    }
+  }
+}
+
+.card-sm {
+  padding: $card-padding-sm;
+}
+
+.card-header {
+  margin-bottom: $spacing-4;
+  padding-bottom: $spacing-4;
+  border-bottom: 1px solid $color-border-primary;
+
+  @include theme-light {
+    border-bottom-color: $color-border-primary-light;
+  }
+}
+
+.card-title {
+  font-size: $font-size-base;
+  font-weight: $font-weight-semibold;
+  margin-bottom: $spacing-2;
+  color: $color-text-primary;
+
+  @include theme-light {
+    color: $color-text-primary-light;
+  }
+
+  @include respond-to(md) {
+    font-size: $font-size-lg;
+  }
+}
+
+.card-body {
+  color: $color-text-secondary;
+
+  @include theme-light {
+    color: $color-text-secondary-light;
+  }
+}
+
+.card-footer {
+  margin-top: $spacing-4;
+  padding-top: $spacing-4;
+  border-top: 1px solid $color-border-primary;
+
+  @include theme-light {
+    border-top-color: $color-border-primary-light;
+  }
+}
+
+// ============================================
+// FORMS
+// ============================================
+
+.form-group {
+  margin-bottom: $spacing-4;
+}
+
+.form-label {
+  display: block;
+  font-weight: $font-weight-medium;
+  margin-bottom: $spacing-1;
+  color: $color-text-primary;
+  font-size: $font-size-xs;
+
+  @include theme-light {
+    color: $color-text-primary-light;
+  }
+}
+
+.form-input {
+  @include input-base;
+}
+
+.form-textarea {
+  @extend .form-input;
+  min-height: 120px;
+  resize: vertical;
+}
+
+.form-select {
+  @include input-base;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%232563eb' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right $spacing-2 center;
+  background-size: 1.5em 1.5em;
+  padding-right: $spacing-10;
+  appearance: none;
+}
+
+.form-radio,
+.form-checkbox {
+  width: auto;
+  height: auto;
+  margin-right: $spacing-2;
+  cursor: pointer;
+  accent-color: $color-accent-primary;
+}
+
+.form-error {
+  display: block;
+  margin-top: $spacing-1;
+  font-size: $font-size-sm;
+  color: $color-accent-error;
+}
+
+.form-help {
+  display: block;
+  margin-top: $spacing-1;
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+
+  @include theme-light {
+    color: $color-text-tertiary-light;
+  }
+}
+
+// ============================================
+// NAVBAR
+// ============================================
+
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: $z-index-sticky;
+  height: $navbar-height;
+  background-color: $color-bg-secondary;
+  border-bottom: 1px solid $color-border-primary;
+  transition: all $transition-base;
+
+  @include theme-light {
+    background-color: $color-bg-secondary-light;
+    border-bottom-color: $color-border-primary-light;
+    box-shadow: $shadow-sm;
+  }
+
+  @include respond-below(md) {
+    height: $navbar-height-mobile;
+  }
+}
+
+.navbar-container {
+  @include container;
+  @include flex-between;
+  height: 100%;
+  padding-top: $spacing-1;
+  padding-bottom: $spacing-1;
+  position: relative;
+
+  @include respond-below(md) {
+    padding-left: $spacing-2;
+    padding-right: $spacing-2;
+  }
+}
+
+.navbar-brand {
+  font-size: $font-size-base;
+  font-weight: $font-weight-bold;
+  color: $color-accent-primary;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: $spacing-2;
+  transition: color $transition-base;
+
+  &:hover {
+    color: $color-accent-secondary;
+  }
+
+  @include respond-to(md) {
+    font-size: $font-size-lg;
+  }
+}
+
+.navbar-nav {
+  display: flex;
+  align-items: center;
+  gap: $spacing-2;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+
+  @include respond-to(md) {
+    gap: $spacing-3;
+  }
+
+  @include respond-below(md) {
+    position: fixed;
+    top: $navbar-height-mobile;
+    left: 0;
+    right: 0;
+    background-color: $color-bg-secondary;
+    border-bottom: 1px solid $color-border-primary;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height $transition-base, padding $transition-base;
+    padding: 0;
+    box-shadow: $shadow-lg;
+    z-index: $z-index-dropdown;
+
+    @include theme-light {
+      background-color: $color-bg-secondary-light;
+      border-bottom-color: $color-border-primary-light;
+    }
+
+    &.open {
+      max-height: 85vh;
+      padding: $spacing-2 0;
+      overflow-y: auto;
+    }
+  }
+}
+
+.navbar-link {
+  color: $color-text-secondary;
+  text-decoration: none;
+  font-weight: $font-weight-medium;
+  padding: $spacing-1 $spacing-2;
+  border-radius: $radius-sm;
+  transition: all $transition-base;
+  position: relative;
+  display: block;
+  font-size: $font-size-sm;
+
+  @include theme-light {
+    color: $color-text-secondary-light;
+  }
+
+  &:hover {
+    color: $color-accent-primary;
+    background-color: rgba($color-accent-primary, 0.1);
+  }
+
+  &.active {
+    color: $color-accent-primary;
+    background-color: rgba($color-accent-primary, 0.15);
+  }
+
+  @include respond-to(md) {
+    padding: $spacing-2 $spacing-3;
+    font-size: $font-size-base;
+  }
+
+  @include respond-below(md) {
+    padding: $spacing-2 $spacing-3;
+    width: 100%;
+    text-align: left;
+  }
+}
+
+.navbar-actions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-2;
+
+  @include respond-to(md) {
+    gap: $spacing-3;
+  }
+
+  @include respond-below(md) {
+    display: none; // Hide on mobile, will be shown in menu
+  }
+}
+
+.navbar-actions-mobile {
+  display: none;
+  list-style: none;
+
+  @include respond-below(md) {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-2;
+    padding: $spacing-3;
+    border-top: 1px solid $color-border-primary;
+    margin-top: $spacing-2;
+
+    @include theme-light {
+      border-top-color: $color-border-primary-light;
+    }
+
+    .wallet-address {
+      display: block;
+      text-align: center;
+      margin-bottom: $spacing-2;
+    }
+  }
+}
+
+.navbar-toggle {
+  display: none;
+  background: none;
+  border: none;
+  color: $color-text-primary;
+  font-size: $font-size-lg;
+  cursor: pointer;
+  padding: $spacing-1;
+  border-radius: $radius-sm;
+  transition: background-color $transition-base;
+  width: 2rem;
+  height: 2rem;
+
+  @include theme-light {
+    color: $color-text-primary-light;
+  }
+
+  &:hover {
+    background-color: rgba($color-text-primary, 0.1);
+  }
+
+  @include respond-below(md) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+// ============================================
+// BANNER / ALERT
+// ============================================
+
+.banner {
+  padding: $spacing-4;
+  border-bottom: 1px solid;
+  text-align: center;
+  font-weight: $font-weight-semibold;
+  position: relative;
+  z-index: $z-index-fixed;
+}
+
+.banner-warning {
+  background-color: rgba($color-accent-warning, 0.1);
+  border-bottom-color: rgba($color-accent-warning, 0.3);
+  color: $color-accent-warning;
+
+  @include theme-light {
+    background-color: rgba($color-accent-warning, 0.15);
+  }
+}
+
+.banner-error {
+  background-color: rgba($color-accent-error, 0.1);
+  border-bottom-color: rgba($color-accent-error, 0.3);
+  color: $color-accent-error;
+
+  @include theme-light {
+    background-color: rgba($color-accent-error, 0.15);
+  }
+}
+
+.banner-info {
+  background-color: rgba($color-accent-primary, 0.1);
+  border-bottom-color: rgba($color-accent-primary, 0.3);
+  color: $color-accent-primary;
+
+  @include theme-light {
+    background-color: rgba($color-accent-primary, 0.15);
+  }
+}
+
+// ============================================
+// BADGE
+// ============================================
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: $spacing-1 $spacing-2;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-medium;
+  border-radius: $radius-full;
+  background-color: $color-bg-tertiary;
+  color: $color-text-secondary;
+
+  @include theme-light {
+    background-color: $color-bg-tertiary-light;
+    color: $color-text-secondary-light;
+  }
+}
+
+.badge-primary {
+  background-color: rgba($color-accent-primary, 0.2);
+  color: $color-accent-primary;
+}
+
+.badge-success {
+  background-color: rgba($color-accent-success, 0.2);
+  color: $color-accent-success;
+}
+
+.badge-warning {
+  background-color: rgba($color-accent-warning, 0.2);
+  color: $color-accent-warning;
+}
+
+.badge-error {
+  background-color: rgba($color-accent-error, 0.2);
+  color: $color-accent-error;
+}
+
+// ============================================
+// STATUS MESSAGE
+// ============================================
+
+.status-message {
+  padding: $spacing-3 $spacing-4;
+  border-radius: $radius-md;
+  margin-bottom: $spacing-4;
+  font-size: $font-size-sm;
+  display: flex;
+  align-items: center;
+  gap: $spacing-2;
+}
+
+.status-message-success {
+  background-color: rgba($color-accent-success, 0.1);
+  color: $color-accent-success;
+  border: 1px solid rgba($color-accent-success, 0.3);
+}
+
+.status-message-error {
+  background-color: rgba($color-accent-error, 0.1);
+  color: $color-accent-error;
+  border: 1px solid rgba($color-accent-error, 0.3);
+}
+
+.status-message-info {
+  background-color: rgba($color-accent-primary, 0.1);
+  color: $color-accent-primary;
+  border: 1px solid rgba($color-accent-primary, 0.3);
+}
+
+.status-message-warning {
+  background-color: rgba($color-accent-warning, 0.1);
+  color: $color-accent-warning;
+  border: 1px solid rgba($color-accent-warning, 0.3);
+}
+
+// ============================================
+// LOADING SPINNER
+// ============================================
+
+.spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba($color-accent-primary, 0.2);
+  border-top-color: $color-accent-primary;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+// ============================================
+// FOOTER
+// ============================================
+
+.footer {
+  margin-top: $spacing-16;
+  padding: $spacing-8 0;
+  border-top: 1px solid $color-border-primary;
+  background-color: $color-bg-secondary;
+  color: $color-text-secondary;
+
+  @include theme-light {
+    background-color: $color-bg-secondary-light;
+    border-top-color: $color-border-primary-light;
+    color: $color-text-secondary-light;
+  }
+}
+
+.footer-container {
+  @include container;
+  text-align: center;
+}
+
+.footer-text {
+  font-size: $font-size-sm;
+  margin-bottom: $spacing-2;
+}
+
+.footer-address {
+  @include font-mono;
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+  word-break: break-all;
+
+  @include theme-light {
+    color: $color-text-tertiary-light;
+  }
+}
+
+// ============================================
+// PAGE LAYOUT
+// ============================================
+
+.page {
+  min-height: calc(100vh - #{$navbar-height});
+  padding: $spacing-4 $spacing-3;
+
+  @include respond-to(md) {
+    padding: $spacing-8 $spacing-4;
+  }
+
+  @include respond-to(lg) {
+    padding: $spacing-12 $spacing-6;
+  }
+}
+
+.page-header {
+  margin-bottom: $spacing-4;
+
+  @include respond-to(md) {
+    margin-bottom: $spacing-8;
+  }
+}
+
+.page-title {
+  font-size: $font-size-xl;
+  font-weight: $font-weight-bold;
+  margin-bottom: $spacing-2;
+  color: $color-text-primary;
+
+  @include theme-light {
+    color: $color-text-primary-light;
+  }
+
+  @include respond-to(md) {
+    font-size: $font-size-2xl;
+  }
+
+  @include respond-to(lg) {
+    font-size: $font-size-3xl;
+  }
+}
+
+.page-subtitle {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+
+  @include theme-light {
+    color: $color-text-secondary-light;
+  }
+
+  @include respond-to(md) {
+    font-size: $font-size-base;
+  }
+}
+
+// ============================================
+// LIST ITEMS
+// ============================================
+
+.list-item {
+  padding: $spacing-4;
+  border-bottom: 1px solid $color-border-primary;
+  transition: all $transition-base;
+
+  @include theme-light {
+    border-bottom-color: $color-border-primary-light;
+  }
+
+  &:hover {
+    background-color: $color-bg-tertiary;
+
+    @include theme-light {
+      background-color: $color-bg-tertiary-light;
+    }
+  }
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+// ============================================
+// ADDRESS DISPLAY
+// ============================================
+
+.address {
+  @include font-mono;
+  font-size: $font-size-sm;
+  color: $color-accent-primary;
+  background-color: $color-bg-tertiary;
+  padding: $spacing-1 $spacing-2;
+  border-radius: $radius-sm;
+
+  @include theme-light {
+    background-color: $color-bg-tertiary-light;
+  }
+}

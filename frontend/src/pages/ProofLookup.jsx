@@ -192,90 +192,145 @@ export default function ProofLookup() {
   }
 
   return (
-    <div style={{ padding: 12 }}>
-      <h2>Proof Lookup (from IPFS / Pinata)</h2>
+    <div className="container">
+      <div className="page-header">
+        <h1 className="page-title">Proof Lookup</h1>
+        <p className="page-subtitle">Lookup Merkle proofs from IPFS / Pinata</p>
+      </div>
 
-      <div style={{ marginBottom: 8 }}>
-        <div>
-          <label>Gateway base URL (optional):&nbsp;
-            <input value={gatewayUrl} onChange={(e) => setGatewayUrl(e.target.value)} style={{ width: 380 }} />
-          </label>
+      <div className="card mb-6">
+        <div className="form-group">
+          <label className="form-label">Gateway base URL (optional)</label>
+          <input 
+            className="form-input" 
+            value={gatewayUrl} 
+            onChange={(e) => setGatewayUrl(e.target.value)} 
+            placeholder="https://gateway.pinata.cloud/ipfs/"
+          />
         </div>
 
-        <div style={{ marginTop: 8 }}>
-          <label>CID or IPFS URL:&nbsp;
-            <input value={cidOrUrl} onChange={(e) => setCidOrUrl(e.target.value)} style={{ width: 400 }} placeholder="Qm... or /ipfs/<CID> or https://gateway.pinata.cloud/ipfs/<CID>" />
-          </label>
-          <button onClick={fetchProofs} style={{ marginLeft: 8 }} disabled={loading}>{loading ? "Fetching..." : "Fetch proofs.json"}</button>
-        </div>
-
-        <div style={{ marginTop: 8 }}>
-          <small>Note: gateways may enforce CORS. If fetch fails, try a different gateway (https://ipfs.io/ipfs/..., https://cloudflare-ipfs.com/ipfs/..., https://gateway.pinata.cloud/ipfs/...).</small>
+        <div className="form-group">
+          <label className="form-label">CID or IPFS URL</label>
+          <div className="flex gap-3 flex-wrap items-end">
+            <input 
+              className="form-input" 
+              value={cidOrUrl} 
+              onChange={(e) => setCidOrUrl(e.target.value)} 
+              placeholder="Qm... or /ipfs/<CID> or https://gateway.pinata.cloud/ipfs/<CID>"
+              style={{ flex: 1, minWidth: 300 }}
+            />
+            <button 
+              className="btn btn-primary btn-sm" 
+              onClick={fetchProofs} 
+              disabled={loading}
+            >
+              {loading ? <><span className="spinner" style={{ marginRight: 8 }}></span>Fetching...</> : "Fetch proofs.json"}
+            </button>
+          </div>
+          <div className="form-help">
+            Note: gateways may enforce CORS. If fetch fails, try a different gateway (https://ipfs.io/ipfs/..., https://cloudflare-ipfs.com/ipfs/..., https://gateway.pinata.cloud/ipfs/...).
+          </div>
         </div>
       </div>
 
       {proofsObj && (
-        <div style={{ marginBottom: 12 }}>
-          <div>Proofs loaded — {Object.keys(proofsObj).length} addresses</div>
-          <div style={{ marginTop: 8 }}>
-            <button onClick={() => navigator.clipboard?.writeText(JSON.stringify(proofsObj)).then(() => setStatus("Full proofs copied."))}>Copy whole JSON</button>
-            <button onClick={handleDownloadAllProofs} style={{ marginLeft: 8 }}>Download proofs.json</button>
+        <div className="card mb-6">
+          <div className="mb-3">
+            <strong>Proofs loaded — {Object.keys(proofsObj).length} addresses</strong>
+          </div>
+          <div className="flex gap-3 flex-wrap">
+            <button 
+              className="btn btn-secondary btn-sm"
+              onClick={() => navigator.clipboard?.writeText(JSON.stringify(proofsObj)).then(() => setStatus("Full proofs copied."))}
+            >
+              Copy whole JSON
+            </button>
+            <button 
+              className="btn btn-secondary btn-sm"
+              onClick={handleDownloadAllProofs}
+            >
+              Download proofs.json
+            </button>
           </div>
         </div>
       )}
 
-      <div style={{ marginBottom: 12 }}>
-        <div>
-          <strong>Lookup address</strong> — wallet connected: {connectedAddress || "no"}
+      <div className="card mb-6">
+        <div className="mb-4">
+          <strong>Lookup address</strong> — wallet connected: {connectedAddress ? <span className="address">{connectedAddress}</span> : "no"}
         </div>
-        <div style={{ marginTop: 6 }}>
-          <label>Manual address (optional):&nbsp;
-            <input value={manualAddr} onChange={(e) => setManualAddr(e.target.value)} style={{ width: 360 }} placeholder="0x..." />
-          </label>
-
-          <button onClick={async () => {
-            setError(null);
-            // if not connected and no manual address entered, try to connect
-            if (!manualAddr && !connectedAddress) {
-              try {
-                await connect();
-                await new Promise(r => setTimeout(r, 200));
-              } catch (err) {
-                setError("Connect failed: " + (err?.message || err));
-                return;
-              }
-            }
-            await lookup();
-          }} style={{ marginLeft: 8 }}>
-            Lookup (use wallet if manual empty)
-          </button>
+        <div className="form-group mb-0">
+          <div className="flex gap-3 flex-wrap items-end">
+            <label className="form-label mb-0" style={{ flex: 1, minWidth: 200 }}>
+              Manual address (optional)
+              <input 
+                className="form-input text-mono" 
+                value={manualAddr} 
+                onChange={(e) => setManualAddr(e.target.value)} 
+                placeholder="0x..."
+              />
+            </label>
+            <button 
+              className="btn btn-primary btn-sm"
+              onClick={async () => {
+                setError(null);
+                // if not connected and no manual address entered, try to connect
+                if (!manualAddr && !connectedAddress) {
+                  try {
+                    await connect();
+                    await new Promise(r => setTimeout(r, 200));
+                  } catch (err) {
+                    setError("Connect failed: " + (err?.message || err));
+                    return;
+                  }
+                }
+                await lookup();
+              }}
+            >
+              Lookup (use wallet if manual empty)
+            </button>
+          </div>
         </div>
       </div>
 
-      {error && <div style={{ color: "darkred", marginBottom: 10 }}>{error}</div>}
-      {status && <div style={{ color: "#333", marginBottom: 10 }}>{status}</div>}
+      {error && <div className="status-message status-message-error mb-4">{error}</div>}
+      {status && <div className="status-message status-message-info mb-4">{status}</div>}
 
-      {result ? (
-        <div style={{ border: "1px solid #eee", padding: 10, maxWidth: 800 }}>
-          <div><strong>Address:</strong> <code>{result.address}</code></div>
-          <div style={{ marginTop: 6 }}><strong>Leaf:</strong> <code style={{ wordBreak: "break-all" }}>{result.leaf}</code></div>
-          <div style={{ marginTop: 6 }}><strong>Proof ({result.proof.length}):</strong>
-            <ol>
-              {result.proof.map((p, i) => <li key={i}><code style={{ wordBreak: "break-all" }}>{p}</code></li>)}
-            </ol>
+      {result && (
+        <div className="card">
+          <div className="card-header">
+            <h3 className="card-title">Proof Found</h3>
           </div>
-
-          <div style={{ marginTop: 8 }}>
-            <button onClick={handleCopyProof}>Copy proof (comma)</button>
-            <button onClick={handleDownloadProofJson} style={{ marginLeft: 8 }}>Download this proof as JSON</button>
-            <button onClick={() => handleUseInVote()} style={{ marginLeft: 8 }}>Use in Vote (open Vote page)</button>
+          <div className="card-body">
+            <div className="mb-4">
+              <strong>Address:</strong> <code className="address">{result.address}</code>
+            </div>
+            <div className="mb-4">
+              <strong>Leaf:</strong> <code className="text-mono" style={{ wordBreak: "break-all", display: "block", marginTop: 4 }}>{result.leaf}</code>
+            </div>
+            <div className="mb-4">
+              <strong>Proof ({result.proof.length}):</strong>
+              <ol style={{ marginTop: 8, paddingLeft: 20 }}>
+                {result.proof.map((p, i) => (
+                  <li key={i} style={{ marginBottom: 4 }}>
+                    <code className="text-mono" style={{ wordBreak: "break-all" }}>{p}</code>
+                  </li>
+                ))}
+              </ol>
+            </div>
           </div>
-
-          <div style={{ marginTop: 8, fontSize: 13, color: "#666" }}>
-            Tip: you can paste the comma-separated proof into the Vote page merkle input. Or click <em>Use in Vote</em> to open the Vote page with the proof prefilled (Vote must accept route state).
+          <div className="card-footer">
+            <div className="flex gap-3 flex-wrap">
+              <button className="btn btn-primary btn-sm" onClick={handleCopyProof}>Copy proof (comma)</button>
+              <button className="btn btn-secondary btn-sm" onClick={handleDownloadProofJson}>Download this proof as JSON</button>
+              <button className="btn btn-secondary btn-sm" onClick={() => handleUseInVote()}>Use in Vote</button>
+            </div>
+            <div className="form-help mt-3">
+              Tip: you can paste the comma-separated proof into the Vote page merkle input. Or click <em>Use in Vote</em> to open the Vote page with the proof prefilled.
+            </div>
           </div>
         </div>
-      ) : null}
+      )}
     </div>
   );
 }

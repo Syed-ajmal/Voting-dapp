@@ -212,28 +212,53 @@ export default function Create() {
   const disableCreate = busy || loadingOwner || !isOwner;
 
   return (
-    <div style={{ padding: 12 }}>
-      <h2>Create Ballot</h2>
-
-      <div style={{ marginBottom: 12 }}>
-        <div><strong>Contract owner (RPC):</strong> {loadingOwner ? "loading..." : (ownerAddress || "not available")}</div>
-        <div><strong>Connected wallet:</strong> {connectedAddress || "not connected"}</div>
-        {!connectedAddress && <div style={{ marginTop: 8 }}><button onClick={() => connect().catch(e => setStatusMessage("Connect failed: " + friendlyErrorMessage(e)))}>Connect Wallet</button></div>}
-        {connectedAddress && !isOwner && <div style={{ color: "red", marginTop: 8 }}>Connected account is not the contract owner — cannot create ballots.</div>}
+    <div className="container">
+      <div className="page-header">
+        <h1 className="page-title">Create Ballot</h1>
+        <p className="page-subtitle">Create a new voting ballot (owner only)</p>
       </div>
 
-      {statusMessage && <div style={{ marginBottom: 10, color: busy ? "black" : "darkred" }}>{statusMessage}</div>}
-
-      <form onSubmit={handleCreate}>
-        <div style={{ marginBottom: 8 }}>
-          <label>Title<br />
-            <input value={title} onChange={e => setTitle(e.target.value)} />
-          </label>
+      <div className="card mb-6">
+        <div className="mb-4">
+          <div className="mb-2"><strong>Contract owner (RPC):</strong> {loadingOwner ? <span className="spinner" style={{ marginLeft: 8 }}></span> : <span className="address">{ownerAddress || "not available"}</span>}</div>
+          <div className="mb-2"><strong>Connected wallet:</strong> {connectedAddress ? <span className="address">{connectedAddress}</span> : "not connected"}</div>
+          {!connectedAddress && (
+            <div className="mt-3">
+              <button className="btn btn-primary btn-sm" onClick={() => connect().catch(e => setStatusMessage("Connect failed: " + friendlyErrorMessage(e)))}>
+                Connect Wallet
+              </button>
+            </div>
+          )}
+          {connectedAddress && !isOwner && (
+            <div className="status-message status-message-error mt-3">
+              Connected account is not the contract owner — cannot create ballots.
+            </div>
+          )}
         </div>
+      </div>
 
-        <div style={{ marginBottom: 8 }}>
-          <label>Start (local datetime)<br />
+      {statusMessage && (
+        <div className={`status-message ${busy ? "status-message-info" : "status-message-error"} mb-4`}>
+          {statusMessage}
+        </div>
+      )}
+
+      <div className="card">
+        <form onSubmit={handleCreate}>
+          <div className="form-group">
+            <label className="form-label">Title</label>
+            <input 
+              className="form-input" 
+              value={title} 
+              onChange={e => setTitle(e.target.value)} 
+              placeholder="Enter ballot title"
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Start (local datetime)</label>
             <input
+              className="form-input"
               type="datetime-local"
               value={startIso}
               onChange={e => {
@@ -249,45 +274,52 @@ export default function Create() {
               }}
               min={minStartLocal}
             />
-          </label>
-          <div style={{ fontSize: 12, color: "#666" }}>
-            Note: start must be in the future (cannot pick a past date/time).
+            <div className="form-help">
+              Note: start must be in the future (cannot pick a past date/time).
+            </div>
           </div>
-        </div>
 
-        <div style={{ marginBottom: 8 }}>
-          <label>End (local datetime)<br />
+          <div className="form-group">
+            <label className="form-label">End (local datetime)</label>
             <input
+              className="form-input"
               type="datetime-local"
               value={endIso}
               onChange={e => setEndIso(e.target.value)}
-              // ensure end min is either startIso (if selected) or minStartLocal
               min={startIso || minStartLocal}
             />
-          </label>
-        </div>
+          </div>
 
-        <div style={{ marginBottom: 8 }}>
-          <label>Candidates (comma separated)<br />
-            <input value={candidatesCsv} onChange={e => setCandidatesCsv(e.target.value)} placeholder="Alice,Bob" />
-          </label>
-        </div>
+          <div className="form-group">
+            <label className="form-label">Candidates (comma separated)</label>
+            <input 
+              className="form-input" 
+              value={candidatesCsv} 
+              onChange={e => setCandidatesCsv(e.target.value)} 
+              placeholder="Alice,Bob,Charlie"
+            />
+          </div>
 
-        <div style={{ marginBottom: 8 }}>
-          <label>Merkle root (optional, 0x... or blank)<br />
-            <input value={merkleRoot} onChange={e => setMerkleRoot(e.target.value)} placeholder="0x..." />
-          </label>
-        </div>
+          <div className="form-group">
+            <label className="form-label">Merkle root (optional, 0x... or blank)</label>
+            <input 
+              className="form-input text-mono" 
+              value={merkleRoot} 
+              onChange={e => setMerkleRoot(e.target.value)} 
+              placeholder="0x..."
+            />
+          </div>
 
-        <div style={{ marginTop: 10 }}>
-          <button type="submit" disabled={disableCreate}>
-            {busy ? "Working..." : (loadingOwner ? "Loading owner..." : (isOwner ? "Create Ballot" : "Owner only"))}
-          </button>
-        </div>
-      </form>
+          <div className="mt-6">
+            <button type="submit" className="btn btn-primary btn-lg btn-full" disabled={disableCreate}>
+              {busy ? "Working..." : (loadingOwner ? "Loading owner..." : (isOwner ? "Create Ballot" : "Owner only"))}
+            </button>
+          </div>
+        </form>
+      </div>
 
-      <div style={{ marginTop: 12, fontSize: 12, color: "#666" }}>
-        <div>Notes:</div>
+      <div className="card mt-6">
+        <h4 className="mb-3">Notes:</h4>
         <ul>
           <li>Only the contract owner (deployer) can create ballots.</li>
           <li>If you cancel the MetaMask confirmation, the transaction will not be sent and you'll see a cancellation message.</li>

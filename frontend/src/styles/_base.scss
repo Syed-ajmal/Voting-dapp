@@ -1,0 +1,328 @@
+// ============================================
+// BASE STYLES & RESET
+// ============================================
+
+@import 'variables';
+@import 'mixins';
+
+// ============================================
+// CSS RESET & NORMALIZE
+// ============================================
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  scroll-behavior: smooth;
+
+  @include respond-to(md) {
+    font-size: 15px;
+  }
+
+  @include respond-to(lg) {
+    font-size: 16px;
+  }
+}
+
+body {
+  font-family: $font-primary;
+  font-size: $font-size-base;
+  font-weight: $font-weight-normal;
+  line-height: $line-height-normal;
+  color: $color-text-primary;
+  background-color: $color-bg-primary;
+  min-height: 100vh;
+  transition: background-color $transition-base, color $transition-base;
+
+  @include theme-light {
+    color: $color-text-primary-light;
+    background-color: $color-bg-primary-light;
+  }
+}
+
+// ============================================
+// TYPOGRAPHY
+// ============================================
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: $font-weight-bold;
+  line-height: $line-height-tight;
+  color: $color-text-primary;
+  margin-bottom: $spacing-4;
+
+  @include theme-light {
+    color: $color-text-primary-light;
+  }
+}
+
+h1 {
+  font-size: $font-size-2xl;
+  font-weight: $font-weight-bold;
+  letter-spacing: $letter-spacing-tight;
+
+  @include respond-to(md) {
+    font-size: $font-size-3xl;
+  }
+
+  @include respond-to(lg) {
+    font-size: $font-size-4xl;
+  }
+}
+
+h2 {
+  font-size: $font-size-xl;
+  font-weight: $font-weight-bold;
+
+  @include respond-to(md) {
+    font-size: $font-size-2xl;
+  }
+
+  @include respond-to(lg) {
+    font-size: $font-size-3xl;
+  }
+}
+
+h3 {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+
+  @include respond-to(md) {
+    font-size: $font-size-xl;
+  }
+
+  @include respond-to(lg) {
+    font-size: $font-size-2xl;
+  }
+}
+
+h4 {
+  font-size: $font-size-base;
+  font-weight: $font-weight-semibold;
+
+  @include respond-to(md) {
+    font-size: $font-size-lg;
+  }
+
+  @include respond-to(lg) {
+    font-size: $font-size-xl;
+  }
+}
+
+h5 {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+
+  @include respond-to(md) {
+    font-size: $font-size-base;
+  }
+
+  @include respond-to(lg) {
+    font-size: $font-size-lg;
+  }
+}
+
+h6 {
+  font-size: $font-size-xs;
+  font-weight: $font-weight-medium;
+
+  @include respond-to(md) {
+    font-size: $font-size-sm;
+  }
+
+  @include respond-to(lg) {
+    font-size: $font-size-base;
+  }
+}
+
+p {
+  margin-bottom: $spacing-4;
+  color: $color-text-secondary;
+
+  @include theme-light {
+    color: $color-text-secondary-light;
+  }
+}
+
+a {
+  color: $color-accent-primary;
+  text-decoration: none;
+  transition: color $transition-base;
+
+  &:hover {
+    color: $color-accent-secondary;
+  }
+
+  &:focus-visible {
+    @include focus-visible;
+  }
+}
+
+strong, b {
+  font-weight: $font-weight-semibold;
+}
+
+em, i {
+  font-style: italic;
+}
+
+code {
+  font-family: $font-mono;
+  font-size: 0.9em;
+  padding: 0.125rem 0.375rem;
+  background-color: $color-bg-tertiary;
+  border-radius: $radius-sm;
+  color: $color-accent-primary;
+
+  @include theme-light {
+    background-color: $color-bg-tertiary-light;
+  }
+}
+
+pre {
+  font-family: $font-mono;
+  font-size: $font-size-sm;
+  padding: $spacing-4;
+  background-color: $color-bg-secondary;
+  border-radius: $radius-lg;
+  overflow-x: auto;
+  border: 1px solid $color-border-primary;
+
+  @include theme-light {
+    background-color: $color-bg-secondary-light;
+    border-color: $color-border-primary-light;
+  }
+
+  code {
+    padding: 0;
+    background: none;
+    color: inherit;
+  }
+}
+
+// ============================================
+// LISTS
+// ============================================
+
+ul, ol {
+  margin-bottom: $spacing-4;
+  padding-left: $spacing-6;
+}
+
+li {
+  margin-bottom: $spacing-2;
+  color: $color-text-secondary;
+
+  @include theme-light {
+    color: $color-text-secondary-light;
+  }
+}
+
+// ============================================
+// IMAGES
+// ============================================
+
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+// ============================================
+// FORM ELEMENTS (Base - detailed in components)
+// ============================================
+
+button {
+  @include button-base;
+}
+
+input,
+textarea,
+select {
+  @include input-base;
+}
+
+label {
+  display: block;
+  font-weight: $font-weight-medium;
+  margin-bottom: $spacing-2;
+  color: $color-text-primary;
+
+  @include theme-light {
+    color: $color-text-primary-light;
+  }
+}
+
+// ============================================
+// UTILITY CLASSES
+// ============================================
+
+.sr-only {
+  @include sr-only;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-left {
+  text-align: left;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.text-mono {
+  @include font-mono;
+}
+
+.text-ellipsis {
+  @include text-ellipsis;
+}
+
+// ============================================
+// SCROLLBAR STYLING
+// ============================================
+
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: $color-bg-secondary;
+}
+
+::-webkit-scrollbar-thumb {
+  background: $color-bg-tertiary;
+  border-radius: $radius-full;
+  border: 2px solid $color-bg-secondary;
+
+  &:hover {
+    background: $color-text-tertiary;
+  }
+}
+
+// ============================================
+// SELECTION
+// ============================================
+
+::selection {
+  background-color: rgba($color-accent-primary, 0.3);
+  color: $color-text-primary;
+}
+
+::-moz-selection {
+  background-color: rgba($color-accent-primary, 0.3);
+  color: $color-text-primary;
+}
+

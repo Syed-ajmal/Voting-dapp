@@ -84,54 +84,68 @@ export default function BallotList({ compact = false, onSelect }) {
 
   return (
     <div>
-      <div style={{ marginBottom: 12 }}>
-        <label>
-          Ballot ID&nbsp;
-          <input
-            value={idInput}
-            onChange={e => setIdInput(e.target.value)}
-            style={{ width: 120 }}
-            placeholder="e.g. 0"
-          />
-        </label>
-        <button onClick={() => loadBallotById(idInput)} style={{ marginLeft: 8 }} disabled={loading}>
-          {loading ? "Loading..." : "Load Ballot"}
-        </button>
-        <button onClick={() => { setBallots([]); setIdInput(""); setError(null); }} style={{ marginLeft: 8 }}>
-          Clear
-        </button>
+      <div className="form-group mb-6">
+        <div className="flex flex-wrap items-center gap-3">
+          <label className="form-label mb-0">
+            Ballot ID&nbsp;
+            <input
+              className="form-input"
+              value={idInput}
+              onChange={e => setIdInput(e.target.value)}
+              style={{ width: 120 }}
+              placeholder="e.g. 0"
+            />
+          </label>
+          <button 
+            className="btn btn-primary btn-sm" 
+            onClick={() => loadBallotById(idInput)} 
+            disabled={loading}
+          >
+            {loading ? <><span className="spinner" style={{ marginRight: 8 }}></span>Loading...</> : "Load Ballot"}
+          </button>
+          <button 
+            className="btn btn-secondary btn-sm"
+            onClick={() => { setBallots([]); setIdInput(""); setError(null); }}
+          >
+            Clear
+          </button>
+        </div>
       </div>
 
-      {error && <div style={{ color: "red", marginBottom: 8 }}>{error}</div>}
+      {error && <div className="status-message status-message-error mb-4">{error}</div>}
 
       {ballots.length === 0 ? (
-        <div>No ballot loaded. Use the search box above to load one ballot by id.</div>
+        <div className="card">
+          <p className="text-center">No ballot loaded. Use the search box above to load one ballot by id.</p>
+        </div>
       ) : (
-        <ul style={{ listStyle: "none", padding: 0 }}>
+        <div>
           {ballots.map(b => (
-            <li key={b.id} style={{ borderBottom: "1px solid #eee", padding: "8px 0" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <div style={{ minWidth: 60 }}>
-                  <strong>[{b.id}]</strong>
-                </div>
+            <div key={b.id} className="card mb-4">
+              <div className="flex items-center gap-4 flex-wrap">
+                <div className="ballot-id">[{b.id}]</div>
 
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 600 }}>{b.title || "(no title)"}</div>
-                  <div style={{ fontSize: 13, color: "#555" }}>
-                    {tsToLocal(b.startTs)} → {tsToLocal(b.endTs)} {b.finalized ? "(finalized)" : ""}
+                <div style={{ flex: 1, minWidth: 200 }}>
+                  <h3 className="card-title" style={{ marginBottom: 8 }}>{b.title || "(no title)"}</h3>
+                  <div className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
+                    {tsToLocal(b.startTs)} → {tsToLocal(b.endTs)} {b.finalized && <span className="badge badge-success">Finalized</span>}
                   </div>
-                  {!compact && <div style={{ marginTop: 6, fontSize: 13 }}>Candidates: {b.candidateNames.join(", ")}</div>}
+                  {!compact && (
+                    <div className="text-sm mt-2">
+                      <strong>Candidates:</strong> {b.candidateNames.join(", ")}
+                    </div>
+                  )}
                 </div>
 
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button onClick={() => goToResults(b.id)}>View</button>
-                  <button onClick={() => goToVote(b.id)}>Vote</button>
-                  <button onClick={() => loadBallotById(b.id)}>Refresh</button>
+                <div className="flex gap-2 flex-wrap">
+                  <button className="btn btn-secondary btn-sm" onClick={() => goToResults(b.id)}>View</button>
+                  <button className="btn btn-primary btn-sm" onClick={() => goToVote(b.id)}>Vote</button>
+                  <button className="btn btn-ghost btn-sm" onClick={() => loadBallotById(b.id)}>Refresh</button>
                 </div>
               </div>
-            </li>
+            </div>
           ))}
-        </ul>
+        </div>
       )}
     </div>
   );

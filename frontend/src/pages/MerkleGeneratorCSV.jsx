@@ -235,13 +235,17 @@ export default function MerkleGeneratorCSV() {
   }
 
   return (
-    <div style={{ padding: 12 }}>
-      <h2>Merkle Generator (CSV)</h2>
+    <div className="container">
+      <div className="page-header">
+        <h1 className="page-title">Merkle Generator</h1>
+        <p className="page-subtitle">Generate Merkle trees from CSV address lists</p>
+      </div>
 
-      <div style={{ marginBottom: 12 }}>
-        <div>
-          <label><strong>Upload CSV</strong></label><br />
+      <div className="card mb-6">
+        <div className="form-group">
+          <label className="form-label"><strong>Upload CSV</strong></label>
           <input
+            className="form-input"
             type="file"
             accept=".csv,text/csv"
             onChange={(e) => {
@@ -251,114 +255,139 @@ export default function MerkleGeneratorCSV() {
           />
         </div>
 
-        <div style={{ marginTop: 8 }}>
-          <label>Or paste CSV content</label><br />
+        <div className="form-group">
+          <label className="form-label">Or paste CSV content</label>
           <textarea
+            className="form-textarea"
             rows={6}
-            style={{ width: "100%" }}
             value={csvText}
             onChange={(e) => setCsvText(e.target.value)}
             placeholder="Paste CSV here (first row header optional), then click Parse CSV"
           />
-          <div style={{ marginTop: 6 }}>
-            <button onClick={handleParseText}>Parse CSV</button>
+          <div className="mt-3">
+            <button className="btn btn-primary btn-sm" onClick={handleParseText}>Parse CSV</button>
           </div>
         </div>
       </div>
 
       {parsed && (
-        <div style={{ marginBottom: 12, border: "1px solid #eee", padding: 8 }}>
-          <div><strong>Parsed CSV</strong></div>
-          <div style={{ fontSize: 13, color: "#555", marginTop: 6 }}>
-            Columns detected: {parsed.headers.length || (parsed.rows[0] && parsed.rows[0].length) || 0}
+        <div className="card mb-6">
+          <div className="card-header">
+            <h3 className="card-title">Parsed CSV</h3>
+            <div className="text-sm">
+              Columns detected: {parsed.headers.length || (parsed.rows[0] && parsed.rows[0].length) || 0}
+            </div>
           </div>
+          <div className="card-body">
+            <div className="form-group">
+              <div className="flex gap-3 flex-wrap items-end">
+                <label className="form-label mb-0" style={{ flex: 1, minWidth: 200 }}>
+                  Choose address column
+                  <select
+                    className="form-select"
+                    value={selectedCol ?? 0}
+                    onChange={(e) => setSelectedCol(Number(e.target.value))}
+                  >
+                    {((parsed.headers && parsed.headers.length > 0) ? parsed.headers : parsed.rows[0] || []).map((h, i) => (
+                      <option key={i} value={i}>{h || `column ${i}`}</option>
+                    ))}
+                  </select>
+                </label>
+                <button className="btn btn-primary btn-sm" onClick={handleParseClick}>Inspect / Validate</button>
+              </div>
+            </div>
 
-          <div style={{ marginTop: 8 }}>
-            <label>Choose address column:&nbsp;
-              <select
-                value={selectedCol ?? 0}
-                onChange={(e) => setSelectedCol(Number(e.target.value))}
-              >
-                {((parsed.headers && parsed.headers.length > 0) ? parsed.headers : parsed.rows[0] || []).map((h, i) => (
-                  <option key={i} value={i}>{h || `column ${i}`}</option>
+            <div className="text-sm mt-4">
+              <strong>Sample rows (first 5)</strong>
+              <ul style={{ marginTop: 8 }}>
+                {parsed.rows.slice(0, 5).map((r, idx) => (
+                  <li key={idx}>{r.map(c => c).join(" | ")}</li>
                 ))}
-              </select>
-            </label>
-            <button style={{ marginLeft: 8 }} onClick={handleParseClick}>Inspect / Validate</button>
-          </div>
-
-          <div style={{ marginTop: 8, fontSize: 13 }}>
-            <strong>Sample rows (first 5)</strong>
-            <ul>
-              {parsed.rows.slice(0, 5).map((r, idx) => (
-                <li key={idx}>{r.map(c => c).join(" | ")}</li>
-              ))}
-            </ul>
+              </ul>
+            </div>
           </div>
         </div>
       )}
 
       {addresses.length > 0 && (
-        <div style={{ marginBottom: 12 }}>
-          <h3>Normalized Addresses ({addresses.length})</h3>
-          {invalidRows.length > 0 && (
-            <div style={{ color: "darkred", marginBottom: 8 }}>
-              {invalidRows.length} invalid rows detected (row numbers shown).
-              <ul>
-                {invalidRows.slice(0, 10).map((ir, i) => <li key={i}>Row {ir.row}: "{ir.raw}"</li>)}
-              </ul>
-            </div>
-          )}
-
-          <div style={{ maxHeight: 200, overflow: "auto", border: "1px solid #ddd", padding: 8 }}>
-            <ol>
-              {addresses.map((a, i) => <li key={i}><code>{a}</code></li>)}
-            </ol>
+        <div className="card mb-6">
+          <div className="card-header">
+            <h3 className="card-title">Normalized Addresses ({addresses.length})</h3>
           </div>
+          <div className="card-body">
+            {invalidRows.length > 0 && (
+              <div className="status-message status-message-error mb-4">
+                {invalidRows.length} invalid rows detected (row numbers shown).
+                <ul style={{ marginTop: 8 }}>
+                  {invalidRows.slice(0, 10).map((ir, i) => <li key={i}>Row {ir.row}: "{ir.raw}"</li>)}
+                </ul>
+              </div>
+            )}
 
-          <div style={{ marginTop: 8 }}>
-            <button onClick={() => handleCopy(addresses.join("\n"))}>Copy (lines)</button>
-            <button onClick={() => handleCopy(addresses.join(","))} style={{ marginLeft: 8 }}>Copy (comma)</button>
-            <button onClick={() => downloadJSON(addresses, "addresses.json")} style={{ marginLeft: 8 }}>Download addresses.json</button>
+            <div style={{ maxHeight: 200, overflow: "auto", border: "1px solid var(--color-border-primary)", padding: 12, borderRadius: 8, backgroundColor: "var(--color-bg-tertiary)" }}>
+              <ol>
+                {addresses.map((a, i) => <li key={i}><code className="address">{a}</code></li>)}
+              </ol>
+            </div>
+
+            <div className="flex gap-3 flex-wrap mt-4">
+              <button className="btn btn-secondary btn-sm" onClick={() => handleCopy(addresses.join("\n"))}>Copy (lines)</button>
+              <button className="btn btn-secondary btn-sm" onClick={() => handleCopy(addresses.join(","))}>Copy (comma)</button>
+              <button className="btn btn-secondary btn-sm" onClick={() => downloadJSON(addresses, "addresses.json")}>Download addresses.json</button>
+            </div>
           </div>
         </div>
       )}
 
-      <div style={{ marginTop: 12 }}>
-        <button onClick={handleGenerateRootAndProofs} disabled={!addresses || addresses.length === 0}>Generate Merkle Root & Proofs</button>
+      <div className="mb-6">
+        <button 
+          className="btn btn-primary btn-lg" 
+          onClick={handleGenerateRootAndProofs} 
+          disabled={!addresses || addresses.length === 0}
+        >
+          Generate Merkle Root & Proofs
+        </button>
       </div>
 
       {merkleRoot && (
-        <div style={{ marginTop: 12 }}>
-          <h3>Merkle Root</h3>
-          <div style={{ wordBreak: "break-all", background: "#f7f7f7", padding: 8, borderRadius: 4 }}>
-            <code>{merkleRoot}</code>
+        <div className="card mb-6">
+          <div className="card-header">
+            <h3 className="card-title">Merkle Root</h3>
           </div>
-          <div style={{ marginTop: 8 }}>
-            <button onClick={() => handleCopy(merkleRoot)}>Copy Root</button>
-            <button onClick={() => downloadJSON({ root: merkleRoot }, "merkle_root.json")} style={{ marginLeft: 8 }}>Download root</button>
+          <div className="card-body">
+            <div className="address" style={{ wordBreak: "break-all", padding: 12, borderRadius: 8 }}>
+              {merkleRoot}
+            </div>
+            <div className="flex gap-3 flex-wrap mt-4">
+              <button className="btn btn-secondary btn-sm" onClick={() => handleCopy(merkleRoot)}>Copy Root</button>
+              <button className="btn btn-secondary btn-sm" onClick={() => downloadJSON({ root: merkleRoot }, "merkle_root.json")}>Download root</button>
+            </div>
           </div>
         </div>
       )}
 
       {proofsMap && (
-        <div style={{ marginTop: 12 }}>
-          <h3>Proofs</h3>
-          <div style={{ marginBottom: 8 }}>
-            <button onClick={() => downloadJSON(proofsMap, "proofs.json")}>Download proofs.json</button>
-            <button style={{ marginLeft: 8 }} onClick={() => {
-              const lines = Object.entries(proofsMap).map(([addr, info]) => `${addr} : [${(info.proof || []).join(",")}]`);
-              handleCopy(lines.join("\n"));
-            }}>Copy proofs (lines)</button>
+        <div className="card mb-6">
+          <div className="card-header">
+            <h3 className="card-title">Proofs</h3>
           </div>
+          <div className="card-body">
+            <div className="flex gap-3 flex-wrap mb-4">
+              <button className="btn btn-secondary btn-sm" onClick={() => downloadJSON(proofsMap, "proofs.json")}>Download proofs.json</button>
+              <button className="btn btn-secondary btn-sm" onClick={() => {
+                const lines = Object.entries(proofsMap).map(([addr, info]) => `${addr} : [${(info.proof || []).join(",")}]`);
+                handleCopy(lines.join("\n"));
+              }}>Copy proofs (lines)</button>
+            </div>
 
-          <div style={{ maxHeight: 240, overflow: "auto", border: "1px solid #eee", padding: 8 }}>
-            <pre style={{ whiteSpace: "pre-wrap" }}>{JSON.stringify(proofsMap, null, 2)}</pre>
+            <div style={{ maxHeight: 240, overflow: "auto", border: "1px solid var(--color-border-primary)", padding: 12, borderRadius: 8, backgroundColor: "var(--color-bg-tertiary)" }}>
+              <pre style={{ whiteSpace: "pre-wrap", margin: 0, fontSize: "0.875rem" }}>{JSON.stringify(proofsMap, null, 2)}</pre>
+            </div>
           </div>
         </div>
       )}
 
-      {status && <div style={{ marginTop: 12, color: "#333" }}>{status}</div>}
+      {status && <div className="status-message status-message-info mb-4">{status}</div>}
     </div>
   );
 }
