@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useWallet } from "../context/WalletContext";
 import * as contractApi from "../api/contract";
+import { isBallotNotFoundError } from "../utils/errors";
 
 /**
  * Vote page
@@ -104,7 +105,7 @@ export default function Vote() {
       }
     } catch (err) {
       console.error("loadBallotById error", err);
-      setStatus("Failed to load ballot: " + (err?.message || String(err)));
+      setStatus(isBallotNotFoundError(err) ? "No ballot found." : "Failed to load ballot: " + (err?.message || String(err)));
     } finally {
       setLoading(false);
     }

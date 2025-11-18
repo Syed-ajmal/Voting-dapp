@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useWallet } from "../context/WalletContext";
 import { getReadOnlyContract, getSignerContract } from "../api/contract";
+import { isBallotNotFoundError } from "../utils/errors";
 
 /**
  * AdminControl.jsx
@@ -386,7 +387,7 @@ export default function AdminControl() {
                   setStatus(null);
                 } catch (err) {
                   console.error("Load ballot failed", err);
-                  setStatus("Failed to load ballot: " + (err?.message || String(err)));
+                  setStatus(isBallotNotFoundError(err) ? "No ballot found." : "Failed to load ballot: " + (err?.message || String(err)));
                 }
               }}
               disabled={busy}
@@ -496,7 +497,16 @@ export default function AdminControl() {
                   </button>
                   <button 
                     className="btn btn-secondary btn-sm" 
-                    onClick={() => refreshBallot(b.id)} 
+                    onClick={async () => {
+                      setStatus("Loading ballot...");
+                      try {
+                        await refreshBallot(b.id);
+                        setStatus(null);
+                      } catch (err) {
+                        console.error("Refresh ballot failed", err);
+                        setStatus(isBallotNotFoundError(err) ? "No ballot found." : "Failed to load ballot: " + (err?.message || String(err)));
+                      }
+                    }} 
                     disabled={busy}
                   >
                     Refresh

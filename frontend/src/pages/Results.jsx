@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useWallet } from "../context/WalletContext";
 import { getReadOnlyContract, getSignerContract } from "../api/contract";
+import { isBallotNotFoundError } from "../utils/errors";
 
 /**
  * Results.jsx (search-first)
@@ -133,7 +134,7 @@ export default function Results() {
       });
     } catch (err) {
       console.error("Failed to load ballot:", err);
-      setStatus("Failed to load ballot: " + (err?.message || String(err)));
+      setStatus(isBallotNotFoundError(err) ? "No ballot found." : "Failed to load ballot: " + (err?.message || String(err)));
     } finally {
       setLoadingBallot(false);
     }

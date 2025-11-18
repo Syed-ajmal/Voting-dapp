@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import * as contractApi from "../api/contract";
+import { isBallotNotFoundError } from "../utils/errors";
 
 /**
  * BallotList (search-by-id)
@@ -65,7 +66,7 @@ export default function BallotList({ compact = false, onSelect }) {
       });
     } catch (err) {
       console.error("loadBallotById error", err);
-      setError(err?.message || String(err));
+      setError(isBallotNotFoundError(err) ? "No ballot found." : (err?.message || String(err)));
     } finally {
       setLoading(false);
     }
